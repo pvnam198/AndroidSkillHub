@@ -1,0 +1,7 @@
+interface:
+  display_name: "Dịch ngược APK đã cài"
+  short_description: "Lấy và dịch ngược APK đã cài qua ADB"
+  default_prompt: "Dùng $decompile-installed-apk để lấy và dịch ngược ứng dụng Android đã cài bằng package ID."
+
+policy:
+  allow_implicit_invocation: true

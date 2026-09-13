@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mobile UI/UX Designer"
+  short_description: "Dẫn dắt thiết kế mobile UI/UX và IAA"
+  default_prompt: "Dùng $mobile-ui-ux-designer để dẫn dắt tôi từ ý tưởng app đến bộ UI Spec hoàn chỉnh cho developer."

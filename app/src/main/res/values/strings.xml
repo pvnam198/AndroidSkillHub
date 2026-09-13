@@ -1,0 +1,36 @@
+<resources>
+    <!-- Google sample IDs. Replace the app ID and all ad unit IDs before release. -->
+    <string name="admob_app_id" translatable="false">ca-app-pub-3940256099942544~3347511713</string>
+    <string name="ads_demo_title">AdMob Next-Gen demo</string>
+    <string name="ads_initializing">Ads: checking privacy settings…</string>
+    <string name="show_interstitial">Show interstitial</string>
+    <string name="show_rewarded">Show rewarded</string>
+    <string name="show_rewarded_interstitial">Show rewarded interstitial</string>
+    <string name="privacy_options">Privacy options</string>
+    <string name="ad_label">Ad</string>
+    <string name="rewarded_intro_title">Rewarded ad</string>
+    <string name="rewarded_intro_message">Watch this ad to receive its advertised reward. You can skip without receiving a reward.</string>
+    <string name="skip_label">Skip</string>
+    <string name="apply_label">Apply</string>
+    <string name="app_name">AndroidSkillHub</string>
+    <string name="choose_language">Choose your language</string>
+    <string name="next">Next</string>
+    <string name="get_started">Get started</string>
+    <string name="settings">Settings</string>
+    <string name="open_settings">Settings</string>
+    <string name="go_premium">Premium</string>
+    <string name="reset_onboarding">Reset onboarding</string>
+    <string name="onboarding_reset">Onboarding will be shown on the next launch.</string>
+    <string name="premium_title">Premium</string>
+    <string name="mock_upgrade">Upgrade (sample)</string>
+    <string name="premium_active">Premium is active. All ads are disabled.</string>
+    <string name="premium_inactive">Upgrade to remove every ad.</string>
+    <string name="home_title">Your learning hub</string>
+    <string name="onboarding_title_1">Learn practical skills</string>
+    <string name="onboarding_body_1">Short examples help you make progress every day.</string>
+    <string name="onboarding_title_2">Keep your momentum</string>
+    <string name="onboarding_body_2">Your progress is saved automatically as you go.</string>
+    <string name="onboarding_title_3">You are ready</string>
+    <string name="onboarding_body_3">Explore the sample and its privacy controls.</string>
+    <string name="action_may_display_ad">This action may display an ad.</string>
+</resources>

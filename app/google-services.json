@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "147508062084",
+    "project_id": "androidskillhub",
+    "storage_bucket": "androidskillhub.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:147508062084:android:23d62d79485e0c06135fd1",
+        "android_client_info": {
+          "package_name": "com.namstd.androidskillhub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCsjxeO-DIXWdaGg8eM_O9CeUE6u7Xynb4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
