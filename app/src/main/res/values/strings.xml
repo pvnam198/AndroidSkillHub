@@ -8,8 +8,7 @@
     <string name="show_rewarded_interstitial">Show rewarded interstitial</string>
     <string name="privacy_options">Privacy options</string>
     <string name="ad_label">Ad</string>
-    <string name="ad_toggle_expand">▲</string>
-    <string name="ad_toggle_collapse">▼</string>
+    <string name="ad_close">✕</string>
     <string name="rewarded_intro_title">Rewarded ad</string>
     <string name="rewarded_intro_message">Watch this ad to receive its advertised reward. You can skip without receiving a reward.</string>
     <string name="skip_label">Skip</string>

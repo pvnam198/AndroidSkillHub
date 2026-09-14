@@ -5,7 +5,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.namstd.androidskillhub.databinding.ActivityLifecycleTestBinding
 import com.namstd.androidskillhub.databinding.DialogNativeFullBinding
-import com.namstd.androidskillhub.databinding.FragmentHomeBinding
+import com.namstd.androidskillhub.databinding.FragmentPremiumBinding
 
 class BaseUiLifecycleTestActivity : BaseActivity<ActivityLifecycleTestBinding>() {
     override fun inflateBinding(inflater: LayoutInflater): ActivityLifecycleTestBinding =
@@ -27,9 +27,9 @@ class BaseUiLifecycleTestActivity : BaseActivity<ActivityLifecycleTestBinding>()
     }
 }
 
-class RecordingFragment : BaseFragment<FragmentHomeBinding>() {
+class RecordingFragment : BaseFragment<FragmentPremiumBinding>() {
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
-        FragmentHomeBinding.inflate(inflater, container, false)
+        FragmentPremiumBinding.inflate(inflater, container, false)
 
     override fun initConfig(savedInstanceState: Bundle?) {
         LifecycleRecord.fragmentBundle = savedInstanceState

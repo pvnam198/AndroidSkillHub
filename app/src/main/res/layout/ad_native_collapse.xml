@@ -2,7 +2,8 @@
 <com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#FFF3E0">
+    android:background="#FFF3E0"
+    android:elevation="8dp">
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -13,7 +14,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingEnd="28dp">
+            android:paddingEnd="32dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -34,62 +35,63 @@
 
                 <ImageView
                     android:id="@+id/ad_icon"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:contentDescription="@null" />
 
-                <TextView
-                    android:id="@+id/ad_headline"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textStyle="bold" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/ad_headline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/ad_advertiser"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp" />
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/ad_expand_group"
+            <com.google.android.libraries.ads.mobile.sdk.nativead.MediaView
+                android:id="@+id/ad_media"
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:layout_marginTop="8dp" />
+
+            <TextView
+                android:id="@+id/ad_body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
+                android:layout_marginTop="8dp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textSize="13sp" />
 
-                <TextView
-                    android:id="@+id/ad_advertiser"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textSize="12sp" />
-
-                <com.google.android.libraries.ads.mobile.sdk.nativead.MediaView
-                    android:id="@+id/ad_media"
-                    android:layout_width="match_parent"
-                    android:layout_height="160dp"
-                    android:layout_marginTop="8dp" />
-
-                <TextView
-                    android:id="@+id/ad_body"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp" />
-
-                <Button
-                    android:id="@+id/ad_call_to_action"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp" />
-            </LinearLayout>
+            <Button
+                android:id="@+id/ad_call_to_action"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp" />
         </LinearLayout>
 
         <TextView
-            android:id="@+id/ad_toggle"
+            android:id="@+id/ad_close"
             android:layout_width="28dp"
             android:layout_height="28dp"
-            android:layout_gravity="bottom|end"
+            android:layout_gravity="top|end"
             android:gravity="center"
-            android:text="@string/ad_toggle_expand"
+            android:text="@string/ad_close"
             android:textSize="14sp"
             android:textStyle="bold" />
     </FrameLayout>

@@ -2,13 +2,13 @@ package com.namstd.androidskillhub.core.ads
 
 import android.app.Activity
 import android.os.Bundle
-import android.transition.AutoTransition
-import android.transition.TransitionManager
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import android.widget.LinearLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.libraries.ads.mobile.sdk.banner.AdSize
 import com.google.android.libraries.ads.mobile.sdk.banner.AdView
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
@@ -17,7 +17,6 @@ import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView
-import com.namstd.androidskillhub.R
 import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.databinding.AdBannerShimmerBinding
 import com.namstd.androidskillhub.databinding.AdNativeCollapseBinding
@@ -25,11 +24,15 @@ import com.namstd.androidskillhub.databinding.AdNativeCollapseBinding
 object BannerAds {
     /**
      * Loads a banner into [container]. When [collapsible] is true, either shows AdMob's native
-     * collapsible banner, or - if [RemoteConfig.useNativeCollapseBanner] is on - a plain banner
-     * topped with a toggleable native ad strip that the user expands or collapses by tapping it
+     * collapsible banner, or - if [RemoteConfig.useNativeCollapseBanner] is on - a plain banner in
+     * [container] that gets fully covered by a native ad strip floated over the activity's content
      * (the "custom collapse banner", backed by the shared [NativePlacement.COLLAPSE_BANNER] slot).
-     * This is the single entry point for both variants so every screen's [collapsible] slot gets
-     * the swap for free via Remote Config.
+     * The native strip is added outside [container]'s own layout flow (bottom-docked over the
+     * activity's content root), so - like AdMob's real collapsible banner - it never pushes the
+     * screen's content, it draws over it; [container] itself is just hidden (not resized) while the
+     * strip is up, so nothing jumps when it's dismissed and the plain banner reappears. This is the
+     * single entry point for both variants so every screen's [collapsible] slot gets the swap for
+     * free via Remote Config.
      */
     fun load(
         activity: Activity,
@@ -114,33 +117,71 @@ object BannerAds {
         return binding
     }
 
-    /** The "custom collapse banner": a toggleable native ad strip stacked above a plain (non-collapsible) banner. */
+    /**
+     * The "custom collapse banner": [container] loads a plain banner as usual. A native ad for
+     * [NativePlacement.COLLAPSE_BANNER] loads in the background into a detached [FrameLayout]; once
+     * it's ready, that layout is docked to the bottom of the activity's content root (floating over
+     * whatever's there, per [attachOverlay]) and [container] is hidden so the banner underneath
+     * isn't obscured by it. Dismissing the strip detaches it for good and reveals the banner again.
+     */
     private fun loadNativeCollapseBanner(
         activity: Activity,
         container: ViewGroup,
         onStatus: (String) -> Unit,
     ): AdHandle {
-        val column = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
-        val nativeSlot = FrameLayout(activity)
-        val bannerSlot = FrameLayout(activity)
-        column.addView(nativeSlot)
-        column.addView(bannerSlot)
-        container.removeAllViews()
-        container.addView(column)
+        val overlay = FrameLayout(activity)
+        val bannerHandle = load(activity, container, collapsible = false, onStatus = onStatus)
 
-        val nativeHandle =
-            NativeAds.subscribe(activity, NativePlacement.COLLAPSE_BANNER, nativeSlot, render = ::renderCollapsibleNativeCard)
-        val bannerHandle = load(activity, bannerSlot, collapsible = false, onStatus = onStatus)
+        var nativeHandle: AdHandle? = null
+        nativeHandle = NativeAds.subscribe(activity, NativePlacement.COLLAPSE_BANNER, overlay, render = { act, ad ->
+            container.visibility = View.INVISIBLE
+            attachOverlay(act, overlay)
+            renderCollapsibleNativeCard(act, ad) {
+                detachOverlay(overlay)
+                container.visibility = View.VISIBLE
+                // Release this ad back to the placement's pool and make sure a fresh one is
+                // ready to go, so the next screen that shows this slot doesn't wait on a load.
+                nativeHandle?.destroy()
+                NativeAds.preload(NativePlacement.COLLAPSE_BANNER)
+            }
+        })
 
         return AdHandle {
-            nativeHandle.destroy()
+            detachOverlay(overlay)
+            nativeHandle?.destroy()
             bannerHandle.destroy()
-            container.removeAllViews()
+            container.visibility = View.VISIBLE
         }
     }
 
-    /** Renders a native ad that starts collapsed (icon + headline) and expands/collapses on tap. */
-    private fun renderCollapsibleNativeCard(activity: Activity, ad: NativeAd): NativeAdView {
+    /**
+     * Docks [overlay] to the bottom of [activity]'s content root, outside any screen's own layout
+     * flow, so it floats over the current content instead of pushing it - matching how AdMob's own
+     * collapsible banner expands over the app rather than resizing it. Insets itself off the bottom
+     * system bar since it sits outside the padding [BaseActivity] applies to the screen's own root.
+     */
+    private fun attachOverlay(activity: Activity, overlay: FrameLayout) {
+        if (overlay.parent != null) return
+        overlay.layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            Gravity.BOTTOM,
+        )
+        ViewCompat.setOnApplyWindowInsetsListener(overlay) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, bars.bottom)
+            insets
+        }
+        activity.window.decorView.findViewById<ViewGroup>(android.R.id.content).addView(overlay)
+    }
+
+    /** Removes [overlay] from wherever [attachOverlay] docked it, if anywhere. */
+    private fun detachOverlay(overlay: FrameLayout) {
+        (overlay.parent as? ViewGroup)?.removeView(overlay)
+    }
+
+    /** Renders a properly-sized native ad card (icon + headline + body + CTA) with a corner close button that dismisses it for good. */
+    private fun renderCollapsibleNativeCard(activity: Activity, ad: NativeAd, onDismiss: () -> Unit): NativeAdView {
         val binding = AdNativeCollapseBinding.inflate(LayoutInflater.from(activity))
         val view = binding.root
         view.headlineView = binding.adHeadline
@@ -153,19 +194,13 @@ object BannerAds {
         binding.adAdvertiser.text = ad.advertiser
         binding.adCallToAction.text = ad.callToAction
         binding.adIcon.setImageDrawable(ad.icon?.drawable)
+        binding.adIcon.visibility = if (ad.icon == null) View.GONE else View.VISIBLE
         binding.adBody.visibility = if (ad.body == null) View.GONE else View.VISIBLE
         binding.adAdvertiser.visibility = if (ad.advertiser == null) View.GONE else View.VISIBLE
         binding.adCallToAction.visibility = if (ad.callToAction == null) View.GONE else View.VISIBLE
-        binding.adIcon.visibility = if (ad.icon == null) View.GONE else View.VISIBLE
         view.registerNativeAd(ad, binding.adMedia)
 
-        var expanded = false
-        binding.adToggle.setOnClickListener {
-            expanded = !expanded
-            TransitionManager.beginDelayedTransition(view, AutoTransition())
-            binding.adExpandGroup.visibility = if (expanded) View.VISIBLE else View.GONE
-            binding.adToggle.setText(if (expanded) R.string.ad_toggle_collapse else R.string.ad_toggle_expand)
-        }
+        binding.adClose.setOnClickListener { onDismiss() }
         return view
     }
 }
