@@ -15,7 +15,12 @@ object RemoteConfig {
                 minimumFetchIntervalInSeconds = if (BuildConfig.DEBUG) 0 else 3600
             },
         )
-        remoteConfig.setDefaultsAsync(mapOf(KEY_USE_CUSTOM_INTERSTITIAL to false))
+        remoteConfig.setDefaultsAsync(
+            mapOf(
+                KEY_USE_CUSTOM_INTERSTITIAL to false,
+                KEY_USE_NATIVE_COLLAPSE_BANNER to false,
+            ),
+        )
         remoteConfig.fetchAndActivate()
     }
 
@@ -23,5 +28,10 @@ object RemoteConfig {
     val useCustomInterstitial: Boolean
         get() = remoteConfig.getBoolean(KEY_USE_CUSTOM_INTERSTITIAL)
 
+    /** Whether [com.namstd.androidskillhub.core.ads.BannerAds.load] should build a plain banner + toggleable native ad instead of AdMob's collapsible banner. */
+    val useNativeCollapseBanner: Boolean
+        get() = remoteConfig.getBoolean(KEY_USE_NATIVE_COLLAPSE_BANNER)
+
     private const val KEY_USE_CUSTOM_INTERSTITIAL = "use_custom_interstitial"
+    private const val KEY_USE_NATIVE_COLLAPSE_BANNER = "use_native_collapse_banner"
 }

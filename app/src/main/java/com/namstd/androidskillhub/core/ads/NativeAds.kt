@@ -15,6 +15,9 @@ import com.namstd.androidskillhub.databinding.AdNativeShimmerBinding
 
 enum class NativePlacement {
     LANGUAGE, ONBOARDING_1, ONBOARDING_2, ONBOARDING_3, ONBOARDING_AD, HOME_FEED, POST_INTERSTITIAL,
+
+    /** Shared app-wide slot for [BannerAds]' custom collapse banner - one placement for every collapsible banner call site. */
+    COLLAPSE_BANNER,
 }
 
 /**
@@ -128,7 +131,12 @@ object NativeAds {
         return ad
     }
 
-    fun subscribe(activity: Activity, placement: NativePlacement, container: FrameLayout): AdHandle {
+    fun subscribe(
+        activity: Activity,
+        placement: NativePlacement,
+        container: FrameLayout,
+        render: (Activity, NativeAd) -> NativeAdView = ::renderDefaultCard,
+    ): AdHandle {
         if (!Ads.adsEnabled) return AdHandle {}
         if (!Ads.isReady) return AdHandle {}
         val slot = slotFor(placement)
@@ -146,13 +154,12 @@ object NativeAds {
                 }
                 shimmer?.let { it.root.stopShimmer(); container.removeView(it.root) }
                 shimmer = null
-                val binding = AdNativeBinding.inflate(LayoutInflater.from(activity))
-                populate(ad, binding)
+                val view = render(activity, ad)
                 container.removeAllViews()
-                binding.root.alpha = 0f
-                container.addView(binding.root)
-                binding.root.animate().alpha(1f).setDuration(FADE_IN_MS).start()
-                currentView = binding.root
+                view.alpha = 0f
+                container.addView(view)
+                view.animate().alpha(1f).setDuration(FADE_IN_MS).start()
+                currentView = view
                 attachedAd = ad
             }
         }
@@ -196,6 +203,12 @@ object NativeAds {
             onLoaded = { ad, _ -> slot.onAdLoaded(ad)?.invoke(ad) },
             onFailed = { slot.onLoadFailed() },
         )
+    }
+
+    private fun renderDefaultCard(activity: Activity, ad: NativeAd): NativeAdView {
+        val binding = AdNativeBinding.inflate(LayoutInflater.from(activity))
+        populate(ad, binding)
+        return binding.root
     }
 
     private fun populate(ad: NativeAd, binding: AdNativeBinding) {
