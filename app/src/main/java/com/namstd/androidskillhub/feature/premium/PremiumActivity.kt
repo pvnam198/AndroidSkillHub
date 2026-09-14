@@ -1,15 +1,15 @@
 package com.namstd.androidskillhub.feature.premium
 
 import android.view.LayoutInflater
-import android.view.ViewGroup
 import com.namstd.androidskillhub.R
 import com.namstd.androidskillhub.core.ads.Ads
-import com.namstd.androidskillhub.core.ui.base.BaseFragment
-import com.namstd.androidskillhub.databinding.FragmentPremiumBinding
+import com.namstd.androidskillhub.core.ui.base.BaseActivity
+import com.namstd.androidskillhub.databinding.ActivityPremiumBinding
 
-class PremiumFragment : BaseFragment<FragmentPremiumBinding>() {
-    override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
-        FragmentPremiumBinding.inflate(inflater, container, false)
+class PremiumActivity : BaseActivity<ActivityPremiumBinding>() {
+
+    override fun inflateBinding(inflater: LayoutInflater): ActivityPremiumBinding =
+        ActivityPremiumBinding.inflate(inflater)
 
     override fun initViews() = render()
 

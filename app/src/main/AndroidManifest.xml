@@ -34,6 +34,12 @@
         <activity
             android:name=".feature.main.MainActivity"
             android:exported="false" />
+        <activity
+            android:name=".feature.settings.SettingsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".feature.premium.PremiumActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

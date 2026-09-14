@@ -1,36 +1,36 @@
 package com.namstd.androidskillhub.feature.settings
 
+import android.content.Intent
 import android.view.LayoutInflater
-import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.view.isVisible
 import com.namstd.androidskillhub.R
 import com.namstd.androidskillhub.core.ads.Ads
 import com.namstd.androidskillhub.core.language.AppLanguage
-import com.namstd.androidskillhub.core.ui.base.BaseFragment
-import com.namstd.androidskillhub.databinding.FragmentSettingsBinding
-import com.namstd.androidskillhub.feature.main.MainActivity
-import com.namstd.androidskillhub.feature.premium.PremiumFragment
+import com.namstd.androidskillhub.core.ui.base.BaseActivity
+import com.namstd.androidskillhub.databinding.ActivitySettingsBinding
+import com.namstd.androidskillhub.feature.premium.PremiumActivity
 
-class SettingsFragment : BaseFragment<FragmentSettingsBinding>() {
-    override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
-        FragmentSettingsBinding.inflate(inflater, container, false)
+class SettingsActivity : BaseActivity<ActivitySettingsBinding>() {
+
+    override fun inflateBinding(inflater: LayoutInflater): ActivitySettingsBinding =
+        ActivitySettingsBinding.inflate(inflater)
 
     override fun initViews() {
         binding.privacyButton.isVisible = Ads.isPrivacyOptionsRequired
         binding.bannerContainer.isVisible = !prefs.isPremium
-        if (!prefs.isPremium) loadBanner(binding.bannerContainer)
+        if (!prefs.isPremium) loadBanner(binding.bannerContainer, collapsible = true)
     }
 
     override fun initListeners() {
         fun language(language: AppLanguage) { prefs.selectedLanguage = language.code; prefs.applyLocale(language.code) }
         binding.englishButton.setOnClickListener { language(AppLanguage.ENGLISH) }
         binding.vietnameseButton.setOnClickListener { language(AppLanguage.VIETNAMESE) }
-        binding.privacyButton.setOnClickListener { Ads.showPrivacyOptions(requireActivity()) }
+        binding.privacyButton.setOnClickListener { Ads.showPrivacyOptions(this) }
         binding.resetOnboardingButton.setOnClickListener {
             prefs.resetOnboarding()
-            Toast.makeText(requireContext(), R.string.onboarding_reset, Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.onboarding_reset, Toast.LENGTH_SHORT).show()
         }
-        binding.premiumButton.setOnClickListener { (requireActivity() as MainActivity).navigateTo(PremiumFragment()) }
+        binding.premiumButton.setOnClickListener { startActivity(Intent(this, PremiumActivity::class.java)) }
     }
 }

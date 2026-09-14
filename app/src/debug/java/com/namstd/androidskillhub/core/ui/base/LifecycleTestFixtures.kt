@@ -5,7 +5,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.namstd.androidskillhub.databinding.ActivityLifecycleTestBinding
 import com.namstd.androidskillhub.databinding.DialogNativeFullBinding
-import com.namstd.androidskillhub.databinding.FragmentPremiumBinding
+import com.namstd.androidskillhub.databinding.FragmentOnboardingPageBinding
 
 class BaseUiLifecycleTestActivity : BaseActivity<ActivityLifecycleTestBinding>() {
     override fun inflateBinding(inflater: LayoutInflater): ActivityLifecycleTestBinding =
@@ -27,9 +27,9 @@ class BaseUiLifecycleTestActivity : BaseActivity<ActivityLifecycleTestBinding>()
     }
 }
 
-class RecordingFragment : BaseFragment<FragmentPremiumBinding>() {
+class RecordingFragment : BaseFragment<FragmentOnboardingPageBinding>() {
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
-        FragmentPremiumBinding.inflate(inflater, container, false)
+        FragmentOnboardingPageBinding.inflate(inflater, container, false)
 
     override fun initConfig(savedInstanceState: Bundle?) {
         LifecycleRecord.fragmentBundle = savedInstanceState
