@@ -4,10 +4,18 @@ import com.google.firebase.Firebase
 import com.google.firebase.remoteconfig.remoteConfig
 import com.google.firebase.remoteconfig.remoteConfigSettings
 import com.namstd.androidskillhub.BuildConfig
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /** Feature flags controlled from Firebase Remote Config. */
 object RemoteConfig {
     private val remoteConfig = Firebase.remoteConfig
+
+    private val _isReady = MutableStateFlow(false)
+
+    /** True once [fetchAndActivate] has completed (success or failure) and flag reads below are settled. */
+    val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
 
     fun initialize() {
         remoteConfig.setConfigSettingsAsync(
@@ -21,7 +29,7 @@ object RemoteConfig {
                 KEY_USE_NATIVE_COLLAPSE_BANNER to false,
             ),
         )
-        remoteConfig.fetchAndActivate()
+        remoteConfig.fetchAndActivate().addOnCompleteListener { _isReady.value = true }
     }
 
     /** Whether [com.namstd.androidskillhub.core.ui.base.BaseActivity.showInterstitial] should run the interstitial+2-native-ad break. */

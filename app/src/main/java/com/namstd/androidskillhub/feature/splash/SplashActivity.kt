@@ -10,12 +10,14 @@ import com.namstd.androidskillhub.core.ads.InterstitialAds
 import com.namstd.androidskillhub.core.ads.InterstitialState
 import com.namstd.androidskillhub.core.ads.NativeAds
 import com.namstd.androidskillhub.core.ads.NativePlacement
+import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.ui.base.BaseActivity
 import com.namstd.androidskillhub.databinding.ActivitySplashBinding
 import com.namstd.androidskillhub.feature.language.LanguageActivity
 import com.namstd.androidskillhub.feature.main.MainActivity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 @SuppressLint("CustomSplashScreen")
@@ -35,6 +37,7 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
             binding.bannerContainer.isVisible = false
             lifecycleScope.launch {
                 delay(MIN_DELAY_MS)
+                waitForRemoteConfig()
                 showInterstitial(::navigateToMain)
             }
             return
@@ -59,7 +62,17 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
             delay(CHECK_INTERVAL_MS)
             waitedMs += CHECK_INTERVAL_MS
         }
+        waitForRemoteConfig(waitedMs)
         showInterstitial(::navigateToMain)
+    }
+
+    /** Waits (within the shared delay budget) for Remote Config to settle before Home loads its banner. */
+    private suspend fun waitForRemoteConfig(waitedMs: Duration = MIN_DELAY_MS) {
+        var elapsed = waitedMs
+        while (!RemoteConfig.isReady.value && elapsed < MAX_DELAY_MS) {
+            delay(CHECK_INTERVAL_MS)
+            elapsed += CHECK_INTERVAL_MS
+        }
     }
 
     private fun navigateToMain() {
