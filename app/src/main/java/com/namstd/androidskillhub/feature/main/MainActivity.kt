@@ -25,7 +25,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     override fun initViews() {
         AppOpenAds.load()
         loadBanner(binding.bannerContainer, collapsible = true)
-        val adapter = MainFeedAdapter(this, buildMainFeedItems((1..60).map { "Item $it" }))
+        val adapter = MainFeedAdapter(this, (1..60).map { "Item $it" })
         feedAdapter = adapter
         binding.mainFeedList.layoutManager = LinearLayoutManager(this)
         binding.mainFeedList.adapter = adapter
