@@ -4,40 +4,33 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <ScrollView
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:text="@string/app_name" />
+
+        <ImageView
+            android:id="@+id/ivSetting"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:padding="16dp"
+            android:src="@drawable/ic_setting" />
+
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/main_feed_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="16dp"
-                    android:text="@string/app_name" />
-
-                <ImageView
-                    android:id="@+id/ivSetting"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:padding="16dp"
-                    android:src="@drawable/ic_setting" />
-
-            </LinearLayout>
-        </LinearLayout>
-    </ScrollView>
+        android:layout_weight="1" />
 
     <FrameLayout
         android:id="@+id/banner_container"
