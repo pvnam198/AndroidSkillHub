@@ -37,9 +37,12 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
         container.post { bannerHandle = BannerAds.load(this, container, collapsible) }
     }
 
-    /** Loads a native ad for [placement] into [container] and destroys it automatically in [onDestroy]. */
-    protected fun loadNative(container: FrameLayout, placement: NativePlacement) {
-        container.post { nativeHandle = NativeAds.subscribe(this, placement, container) }
+    /**
+     * Loads a native ad for [placement] into [container] and destroys it automatically in
+     * [onDestroy]. See [NativeAds.subscribe] for [preloadOnShow].
+     */
+    protected fun loadNative(container: FrameLayout, placement: NativePlacement, preloadOnShow: Boolean = false) {
+        container.post { nativeHandle = NativeAds.subscribe(this, placement, container, preloadOnShow) }
     }
 
     /**

@@ -31,9 +31,14 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment() {
         container.post { if (_binding != null) bannerHandle = BannerAds.load(requireActivity(), container, collapsible) }
     }
 
-    /** Loads a native ad for [placement] into [container] and destroys it automatically when the view is torn down. */
-    protected fun loadNative(container: FrameLayout, placement: NativePlacement) {
-        container.post { if (_binding != null) nativeHandle = NativeAds.subscribe(requireActivity(), placement, container) }
+    /**
+     * Loads a native ad for [placement] into [container] and destroys it automatically when the
+     * view is torn down. See [NativeAds.subscribe] for [preloadOnShow].
+     */
+    protected fun loadNative(container: FrameLayout, placement: NativePlacement, preloadOnShow: Boolean = false) {
+        container.post {
+            if (_binding != null) nativeHandle = NativeAds.subscribe(requireActivity(), placement, container, preloadOnShow)
+        }
     }
 
     /** Delegates to the hosting [BaseActivity] - single implementation for the whole app, see there. */

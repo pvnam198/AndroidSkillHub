@@ -133,18 +133,18 @@ object BannerAds {
         val bannerHandle = load(activity, container, collapsible = false, onStatus = onStatus)
 
         var nativeHandle: AdHandle? = null
-        nativeHandle = NativeAds.subscribe(activity, NativePlacement.COLLAPSE_BANNER, overlay, render = { act, ad ->
-            container.visibility = View.INVISIBLE
-            attachOverlay(act, overlay)
-            renderCollapsibleNativeCard(act, ad) {
-                detachOverlay(overlay)
-                container.visibility = View.VISIBLE
-                // Release this ad back to the placement's pool and make sure a fresh one is
-                // ready to go, so the next screen that shows this slot doesn't wait on a load.
-                nativeHandle?.destroy()
-                NativeAds.preload(NativePlacement.COLLAPSE_BANNER)
-            }
-        })
+        nativeHandle = NativeAds.subscribe(
+            activity, NativePlacement.COLLAPSE_BANNER, overlay, preloadOnShow = true,
+            render = { act, ad ->
+                container.visibility = View.INVISIBLE
+                attachOverlay(act, overlay)
+                renderCollapsibleNativeCard(act, ad) {
+                    detachOverlay(overlay)
+                    container.visibility = View.VISIBLE
+                    nativeHandle?.destroy()
+                }
+            },
+        )
 
         return AdHandle {
             detachOverlay(overlay)

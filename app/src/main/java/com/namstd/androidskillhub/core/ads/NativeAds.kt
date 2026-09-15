@@ -21,10 +21,11 @@ enum class NativePlacement {
 }
 
 /**
- * Per-placement pool of one [NativeAd]: a subscriber [take]s the ad to show it in its own view,
- * and [release]s it back once done so a later subscriber for the same placement can reuse it.
- * An ad is never handed to two subscribers at the same time, since a [NativeAd] can only be
- * registered to one [NativeAdView] at once.
+ * Per-placement pool of one [NativeAd]: a subscriber [take]s the ad to show it in its own view.
+ * If the ad finishes loading only after the subscriber's gone, it's [cache]d for the next taker
+ * instead of wasted - but once an ad has actually been shown, it's done for good; nobody caches
+ * it back. An ad is never handed to two subscribers at the same time, since a [NativeAd] can only
+ * be registered to one [NativeAdView] at once.
  */
 private class NativeAdSlot {
     private class Entry(val ad: NativeAd, val loadedAt: Long)
@@ -45,9 +46,9 @@ private class NativeAdSlot {
         return entry.ad
     }
 
-    /** Returns [ad] to the pool so the next subscriber can reuse it instead of reloading. */
+    /** Caches [ad] as the slot's free entry so the next subscriber can reuse it instead of reloading. */
     @Synchronized
-    fun release(ad: NativeAd) {
+    fun cache(ad: NativeAd) {
         freeAd = Entry(ad, System.currentTimeMillis())
     }
 
@@ -131,25 +132,35 @@ object NativeAds {
         return ad
     }
 
+    /**
+     * @param preloadOnShow Whether to kick off a real reload for [placement] the moment an ad is
+     * bound to [container] - use this for slots that get shown again and again (e.g. a screen the
+     * user revisits, or [BannerAds]' collapse banner shared across the whole app) so a fresh ad is
+     * ready by the time this one is dismissed. Leave false for one-shot placements (e.g. onboarding
+     * pages shown exactly once) where preloading a replacement would never get used.
+     */
     fun subscribe(
         activity: Activity,
         placement: NativePlacement,
         container: FrameLayout,
+        preloadOnShow: Boolean = false,
         render: (Activity, NativeAd) -> NativeAdView = ::renderDefaultCard,
     ): AdHandle {
-        if (!Ads.adsEnabled) return AdHandle {}
-        if (!Ads.isReady) return AdHandle {}
+        if (!Ads.adsEnabled || !Ads.isReady) {
+            container.visibility = View.GONE
+            return AdHandle {}
+        }
         val slot = slotFor(placement)
 
-        var active = true
+        var subscribed = true
         var currentView: NativeAdView? = null
         var attachedAd: NativeAd? = null
         var shimmer: AdNativeShimmerBinding? = showShimmer(activity, container)
 
         val onReady: (NativeAd) -> Unit = { ad ->
             activity.runOnUiThread {
-                if (!active) {
-                    slot.release(ad)
+                if (!subscribed) {
+                    slot.cache(ad)
                     return@runOnUiThread
                 }
                 shimmer?.let { it.root.stopShimmer(); container.removeView(it.root) }
@@ -161,13 +172,16 @@ object NativeAds {
                 view.animate().alpha(1f).setDuration(FADE_IN_MS).start()
                 currentView = view
                 attachedAd = ad
+                // This ad is now in use - kick off a real load for the next one right away so a
+                // replacement is warm by the time this one is dismissed.
+                if (preloadOnShow) preload(placement)
             }
         }
 
         slot.take(TTL_MS)?.let(onReady) ?: startLoad(placement, slot, onReady)
 
         return AdHandle {
-            active = false
+            subscribed = false
             slot.cancelLoad(onReady)
             activity.runOnUiThread {
                 currentView?.destroy()
@@ -176,7 +190,9 @@ object NativeAds {
                 shimmer = null
                 container.removeAllViews()
             }
-            attachedAd?.let(slot::release)
+            // This ad has already been shown - it's done, not worth caching for reuse. A
+            // future subscriber just loads its own (fresh, if preloadOnShow already got one going).
+            attachedAd?.destroy()
             attachedAd = null
         }
     }
