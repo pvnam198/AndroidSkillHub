@@ -32,7 +32,7 @@ object BannerAds {
      * screen's content, it draws over it; [container] itself is just hidden (not resized) while the
      * strip is up, so nothing jumps when it's dismissed and the plain banner reappears. This is the
      * single entry point for both variants so every screen's [collapsible] slot gets the swap for
-     * free via Remote Config.
+     * free via Remote Config. Pure routing - the actual AdMob load lives in [loadAdMobBanner].
      */
     fun load(
         activity: Activity,
@@ -43,6 +43,16 @@ object BannerAds {
         if (collapsible && RemoteConfig.useNativeCollapseBanner) {
             return loadNativeCollapseBanner(activity, container, onStatus)
         }
+        return loadAdMobBanner(activity, container, collapsible, onStatus)
+    }
+
+    /** Loads a real AdMob banner into [container] - plain, or AdMob's own collapsible variant when [collapsible]. */
+    private fun loadAdMobBanner(
+        activity: Activity,
+        container: ViewGroup,
+        collapsible: Boolean,
+        onStatus: (String) -> Unit,
+    ): AdHandle {
         if (!Ads.isReady || !Ads.adsEnabled) {
             onStatus("Banner: SDK not ready")
             return AdHandle {}
@@ -130,7 +140,7 @@ object BannerAds {
         onStatus: (String) -> Unit,
     ): AdHandle {
         val overlay = FrameLayout(activity)
-        val bannerHandle = load(activity, container, collapsible = false, onStatus = onStatus)
+        val bannerHandle = loadAdMobBanner(activity, container, collapsible = false, onStatus = onStatus)
 
         var nativeHandle: AdHandle? = null
         nativeHandle = NativeAds.subscribe(
@@ -148,7 +158,7 @@ object BannerAds {
 
         return AdHandle {
             detachOverlay(overlay)
-            nativeHandle?.destroy()
+            nativeHandle.destroy()
             bannerHandle.destroy()
             container.visibility = View.VISIBLE
         }
