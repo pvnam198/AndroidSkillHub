@@ -17,6 +17,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "ADJUST_APP_TOKEN", "\"{YourAppToken}\"")
     }
 
     buildTypes {
@@ -50,6 +52,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.google.mobile.ads.next.gen)
     implementation(libs.google.ump)
+    implementation(libs.adjust.android)
+    implementation(libs.androidx.installreferrer)
     implementation(libs.facebook.shimmer)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.config)

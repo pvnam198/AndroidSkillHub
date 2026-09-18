@@ -4,8 +4,10 @@ import android.app.Activity
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.FrameLayout
+import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest
@@ -212,7 +214,12 @@ object NativeAds {
             attempt = { id, loaded, failed ->
                 val request = NativeAdRequest.Builder(id, listOf(NativeAd.NativeAdType.NATIVE)).build()
                 NativeAdLoader.load(request, object : NativeAdLoaderCallback {
-                    override fun onNativeAdLoaded(nativeAd: NativeAd) = loaded(nativeAd)
+                    override fun onNativeAdLoaded(nativeAd: NativeAd) {
+                        nativeAd.adEventCallback = object : NativeAdEventCallback {
+                            override fun onAdPaid(adValue: AdValue) = AdjustRevenueLogger.log(adValue)
+                        }
+                        loaded(nativeAd)
+                    }
                     override fun onAdFailedToLoad(adError: LoadAdError) = failed(adError.message)
                 })
             },

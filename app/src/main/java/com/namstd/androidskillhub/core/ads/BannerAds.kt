@@ -12,8 +12,10 @@ import androidx.core.view.WindowInsetsCompat
 import com.google.android.libraries.ads.mobile.sdk.banner.AdSize
 import com.google.android.libraries.ads.mobile.sdk.banner.AdView
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
+import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView
@@ -80,7 +82,12 @@ object BannerAds {
                 adView.loadAd(
                     request,
                     object : AdLoadCallback<BannerAd> {
-                        override fun onAdLoaded(ad: BannerAd) = loaded(adView)
+                        override fun onAdLoaded(ad: BannerAd) {
+                            ad.adEventCallback = object : BannerAdEventCallback {
+                                override fun onAdPaid(adValue: AdValue) = AdjustRevenueLogger.log(adValue)
+                            }
+                            loaded(adView)
+                        }
                         override fun onAdFailedToLoad(adError: LoadAdError) {
                             adView.destroy()
                             if (!destroyed) failed(adError.message)

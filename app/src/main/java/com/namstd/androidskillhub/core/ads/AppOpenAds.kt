@@ -5,6 +5,7 @@ import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd
 import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
+import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.namstd.androidskillhub.core.config.RemoteConfig
@@ -42,6 +43,7 @@ object AppOpenAds {
             override fun onAdDismissedFullScreenContent() = runOnMainThread { finish(current) }
             override fun onAdFailedToShowFullScreenContent(fullScreenContentError: FullScreenContentError) =
                 runOnMainThread { finish(current) }
+            override fun onAdPaid(adValue: AdValue) = AdjustRevenueLogger.log(adValue)
         }
         current.show(activity)
     }

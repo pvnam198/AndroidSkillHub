@@ -6,6 +6,8 @@ import android.os.Bundle
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.adjust.sdk.Adjust
+import com.adjust.sdk.AdjustConfig
 import com.namstd.androidskillhub.core.ads.Ads
 import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.preferences.AppPreferences
@@ -18,6 +20,8 @@ class AndroidSkillHubApp : Application(), Application.ActivityLifecycleCallbacks
 
     override fun onCreate() {
         super<Application>.onCreate()
+        val environment = if (BuildConfig.DEBUG) AdjustConfig.ENVIRONMENT_SANDBOX else AdjustConfig.ENVIRONMENT_PRODUCTION
+        Adjust.initSdk(AdjustConfig(this, BuildConfig.ADJUST_APP_TOKEN, environment))
         val preferences = AppPreferences.getInstance(this)
         preferences.applyLocale()
         Ads.adsEnabled = !preferences.isPremium

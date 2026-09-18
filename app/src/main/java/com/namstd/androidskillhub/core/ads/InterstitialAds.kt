@@ -3,6 +3,7 @@ package com.namstd.androidskillhub.core.ads
 import android.app.Activity
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
+import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
@@ -60,6 +61,7 @@ object InterstitialAds {
                 runOnMainThread { finish(current, onStatus, onComplete = onComplete) }
             override fun onAdFailedToShowFullScreenContent(fullScreenContentError: FullScreenContentError) =
                 runOnMainThread { finish(current, onStatus, fullScreenContentError.message, onComplete) }
+            override fun onAdPaid(adValue: AdValue) = AdjustRevenueLogger.log(adValue)
         }
         current.show(activity)
         return true
