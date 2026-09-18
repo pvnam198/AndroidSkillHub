@@ -7,6 +7,7 @@ import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
+import com.namstd.androidskillhub.core.config.RemoteConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -46,6 +47,10 @@ object InterstitialAds {
 
     fun show(activity: Activity, onStatus: (String) -> Unit = {}, onComplete: () -> Unit = {}): Boolean {
         if (!Ads.adsEnabled) return false
+        if (!AdGapGate.canShowInterstitial(RemoteConfig.interInterGapMs, RemoteConfig.interOpenGapMs)) {
+            onStatus("Interstitial: gap not elapsed")
+            return false
+        }
         val current = ad ?: run { onStatus("Interstitial: not ready"); load(onStatus); return false }
         if (!FullScreenGate.acquire(current)) { onStatus("Another full-screen item is showing"); return false }
         ad = null
@@ -62,6 +67,7 @@ object InterstitialAds {
 
     private fun finish(shown: InterstitialAd, status: (String) -> Unit, error: String? = null, onComplete: () -> Unit = {}) {
         FullScreenGate.release(shown)
+        AdGapGate.recordInterstitialShown()
         shown.destroy()
         status(error?.let { "Interstitial: $it" } ?: "Interstitial: dismissed")
         onComplete()

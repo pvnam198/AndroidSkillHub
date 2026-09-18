@@ -7,6 +7,7 @@ import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
 import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
+import com.namstd.androidskillhub.core.config.RemoteConfig
 
 object AppOpenAds {
     private var ad: AppOpenAd? = null
@@ -33,6 +34,7 @@ object AppOpenAds {
     fun onReturnToForeground(activity: Activity) {
         if (!Ads.adsEnabled) return
         if (!isValid()) { ad?.destroy(); ad = null; load(); return }
+        if (!AdGapGate.canShowAppOpen(RemoteConfig.openOpenGapMs, RemoteConfig.interOpenGapMs)) return
         val current = ad ?: return
         if (!FullScreenGate.acquire(current)) return
         ad = null
@@ -46,6 +48,7 @@ object AppOpenAds {
 
     private fun finish(shown: AppOpenAd) {
         FullScreenGate.release(shown)
+        AdGapGate.recordAppOpenShown()
         shown.destroy()
         load()
     }

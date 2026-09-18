@@ -21,7 +21,7 @@ class AndroidSkillHubApp : Application(), Application.ActivityLifecycleCallbacks
         val preferences = AppPreferences.getInstance(this)
         preferences.applyLocale()
         Ads.adsEnabled = !preferences.isPremium
-        RemoteConfig.initialize()
+        RemoteConfig.initialize(this)
         registerActivityLifecycleCallbacks(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     }
