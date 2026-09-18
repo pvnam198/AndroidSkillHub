@@ -19,6 +19,7 @@ import com.namstd.androidskillhub.core.ads.Ads
 import com.namstd.androidskillhub.core.ads.FullScreenGate
 import com.namstd.androidskillhub.core.ads.NativeAds
 import com.namstd.androidskillhub.core.ads.NativePlacement
+import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.ui.base.BaseDialogFragment
 import com.namstd.androidskillhub.databinding.DialogNativeFullBinding
 import com.namstd.androidskillhub.feature.ads.PostInterstitialNativeAdViewModel.UiState.AwaitingClose
@@ -29,25 +30,28 @@ import kotlin.math.ceil
 import kotlinx.coroutines.launch
 
 /**
- * Second half of the "custom interstitial": native ad #1 (5s) then native ad #2 (5s), each
- * requiring an explicit tap to advance once its countdown ends. Shown as a full-screen dialog
- * (instead of a separate Activity) over the current screen so it appears instantly, right after
- * the interstitial closes, with no window-transition delay. Holds [FullScreenGate] for its entire
- * lifetime so nothing else (e.g. an app-open ad on foreground resume) can show over it, and
- * reports completion back via the Fragment Result API.
+ * Second half of the "custom interstitial": [totalStages] native ad(s) shown one after another,
+ * each requiring an explicit tap to advance once its [durationMs] countdown ends. Shown as a
+ * full-screen dialog (instead of a separate Activity) over the current screen so it appears
+ * instantly, right after the interstitial closes, with no window-transition delay. Holds
+ * [FullScreenGate] for its entire lifetime so nothing else (e.g. an app-open ad on foreground
+ * resume) can show over it, and reports completion back via the Fragment Result API.
  */
 class PostInterstitialNativeAdDialogFragment : BaseDialogFragment<DialogNativeFullBinding>() {
 
     private val viewModel: PostInterstitialNativeAdViewModel by viewModels()
 
+    private val totalStages: Int = RemoteConfig.postInterstitialNativeAdCount
+    private val durationMs: Long = RemoteConfig.postInterstitialNativeAdDurationMs
+
     private var currentAd: NativeAd? = null
     private var countdownTimer: CountDownTimer? = null
     private var gateHeld = false
+    private var currentStage = 0
 
     companion object {
         const val TAG = "PostInterstitialNativeAdDialog"
         const val REQUEST_KEY = "post_interstitial_native_ad_done"
-        private const val DURATION_MS = 5_000L
         private const val TICK_MS = 50L
     }
 
@@ -86,7 +90,7 @@ class PostInterstitialNativeAdDialogFragment : BaseDialogFragment<DialogNativeFu
         binding.ivNext.setOnClickListener {
             binding.ivNext.setOnClickListener(null)
             releaseCurrentAd()
-            loadStage(2)
+            loadStage(currentStage + 1)
         }
         binding.ivClose.setOnClickListener {
             binding.ivClose.setOnClickListener(null)
@@ -136,39 +140,41 @@ class PostInterstitialNativeAdDialogFragment : BaseDialogFragment<DialogNativeFu
 
     /**
      * Takes the preloaded ad for this stage - no load wait. Ad #1 is kept warm by
-     * [BaseActivity.showInterstitial] ahead of the interstitial itself; ad #2 only starts
-     * preloading once ad #1 is shown (see [onStageLoaded]), using the time the user spends on it.
-     * Both stages share the same [NativePlacement.POST_INTERSTITIAL] slot since they're never
-     * needed at the same time - one is always fully consumed before the next starts loading.
-     * Falls through to the next stage (or closes) if no ad was ready in time.
+     * [BaseActivity.showInterstitial] ahead of the interstitial itself; each later stage only
+     * starts preloading once the previous one is shown (see [onStageLoaded]), using the time the
+     * user spends on it. All stages share the same [NativePlacement.POST_INTERSTITIAL] slot since
+     * they're never needed at the same time - one is always fully consumed before the next starts
+     * loading. Falls through to the next stage (or closes, past [totalStages]) if no ad was ready
+     * in time.
      */
     private fun loadStage(stageNumber: Int) {
         val ad = NativeAds.poll(NativePlacement.POST_INTERSTITIAL)
         if (ad == null) {
-            if (stageNumber == 1) loadStage(2) else finishBreak()
+            if (stageNumber < totalStages) loadStage(stageNumber + 1) else finishBreak()
         } else {
             onStageLoaded(stageNumber, ad)
         }
     }
 
     private fun onStageLoaded(stageNumber: Int, ad: NativeAd) {
+        currentStage = stageNumber
         currentAd = ad
         bindNativeAd(ad, binding)
-        if (stageNumber == 1) {
-            // NativeAds.poll() above already kicked off the reload for ad #2 - it'll be ready by the time the user taps through.
+        if (stageNumber < totalStages) {
+            // NativeAds.poll() above already kicked off the reload for the next stage - it'll be ready by the time the user taps through.
             startProgressTimer()
         } else {
-            viewModel.onCountdownStarted((DURATION_MS / 1_000L).toInt())
+            viewModel.onCountdownStarted((durationMs / 1_000L).toInt())
             startCountdownTimer()
         }
     }
 
     private fun startProgressTimer() {
         countdownTimer?.cancel()
-        countdownTimer = object : CountDownTimer(DURATION_MS, TICK_MS) {
+        countdownTimer = object : CountDownTimer(durationMs, TICK_MS) {
             override fun onTick(millisUntilFinished: Long) {
-                val elapsed = DURATION_MS - millisUntilFinished
-                viewModel.onProgressTick((elapsed * 100 / DURATION_MS).toInt())
+                val elapsed = durationMs - millisUntilFinished
+                viewModel.onProgressTick((elapsed * 100 / durationMs).toInt())
             }
 
             override fun onFinish() {
@@ -179,10 +185,10 @@ class PostInterstitialNativeAdDialogFragment : BaseDialogFragment<DialogNativeFu
 
     private fun startCountdownTimer() {
         countdownTimer?.cancel()
-        countdownTimer = object : CountDownTimer(DURATION_MS, TICK_MS) {
+        countdownTimer = object : CountDownTimer(durationMs, TICK_MS) {
             override fun onTick(millisUntilFinished: Long) {
                 val secondsLeft = ceil(millisUntilFinished / 1_000.0).toInt()
-                    .coerceIn(1, (DURATION_MS / 1_000L).toInt())
+                    .coerceIn(1, (durationMs / 1_000L).toInt())
                 viewModel.onCountdownTick(secondsLeft)
             }
 

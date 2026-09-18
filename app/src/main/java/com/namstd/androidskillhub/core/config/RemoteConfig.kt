@@ -40,6 +40,9 @@ object RemoteConfig {
                 KEY_INTER_INTER_GAP_SECONDS to prefs.getCachedLong(KEY_INTER_INTER_GAP_SECONDS, 0L),
                 KEY_OPEN_OPEN_GAP_SECONDS to prefs.getCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, 0L),
                 KEY_INTER_OPEN_GAP_SECONDS to prefs.getCachedLong(KEY_INTER_OPEN_GAP_SECONDS, 0L),
+                KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT to prefs.getCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT, 2L),
+                KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS to
+                    prefs.getCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS, 5L),
             ),
         )
         remoteConfig.fetchAndActivate().addOnCompleteListener {
@@ -54,6 +57,8 @@ object RemoteConfig {
         prefs.putCachedLong(KEY_INTER_INTER_GAP_SECONDS, interInterGapMs / 1000)
         prefs.putCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, openOpenGapMs / 1000)
         prefs.putCachedLong(KEY_INTER_OPEN_GAP_SECONDS, interOpenGapMs / 1000)
+        prefs.putCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT, postInterstitialNativeAdCount.toLong())
+        prefs.putCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS, postInterstitialNativeAdDurationMs / 1000)
     }
 
     /** Whether [com.namstd.androidskillhub.core.ui.base.BaseActivity.showInterstitial] should run the interstitial+2-native-ad break. */
@@ -76,9 +81,19 @@ object RemoteConfig {
     val interOpenGapMs: Long
         get() = remoteConfig.getLong(KEY_INTER_OPEN_GAP_SECONDS) * 1000
 
+    /** How many sequential native ads show in the post-interstitial break. Clamped to 1-2 - [com.namstd.androidskillhub.feature.ads.PostInterstitialNativeAdDialogFragment] only supports a 2-stage flow. */
+    val postInterstitialNativeAdCount: Int
+        get() = remoteConfig.getLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT).toInt().coerceIn(1, 2)
+
+    /** How long each native ad stage stays up before its tap target (next/close) becomes available. */
+    val postInterstitialNativeAdDurationMs: Long
+        get() = remoteConfig.getLong(KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS) * 1000
+
     private const val KEY_USE_CUSTOM_INTERSTITIAL = "use_custom_interstitial"
     private const val KEY_USE_NATIVE_COLLAPSE_BANNER = "use_native_collapse_banner"
     private const val KEY_INTER_INTER_GAP_SECONDS = "inter_inter_gap_seconds"
     private const val KEY_OPEN_OPEN_GAP_SECONDS = "open_open_gap_seconds"
     private const val KEY_INTER_OPEN_GAP_SECONDS = "inter_open_gap_seconds"
+    private const val KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT = "post_interstitial_native_ad_count"
+    private const val KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS = "post_interstitial_native_ad_duration_seconds"
 }
