@@ -21,6 +21,11 @@ class MainFeedPageFragment : BaseFragment<FragmentMainFeedPageBinding>() {
         binding.feedList.adapter = adapter
     }
 
+    override fun onPremiumUser(premium: Boolean) {
+        super.onPremiumUser(premium)
+        if (premium) feedAdapter?.hideAds()
+    }
+
     override fun releaseResources() {
         binding.feedList.adapter = null
         feedAdapter?.release()

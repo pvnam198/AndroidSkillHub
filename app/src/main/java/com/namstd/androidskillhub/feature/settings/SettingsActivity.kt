@@ -18,8 +18,7 @@ class SettingsActivity : BaseActivity<ActivitySettingsBinding>() {
 
     override fun initViews() {
         binding.privacyButton.isVisible = Ads.isPrivacyOptionsRequired
-        binding.bannerContainer.isVisible = !prefs.isPremium
-        if (!prefs.isPremium) loadBanner(binding.bannerContainer, collapsible = true)
+        loadBanner(binding.bannerContainer, collapsible = true)
     }
 
     override fun initListeners() {

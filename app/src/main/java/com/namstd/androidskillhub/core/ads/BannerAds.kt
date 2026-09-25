@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
@@ -59,6 +60,7 @@ object BannerAds {
     ): BannerSlotHandle {
         if (!Ads.isReady || !Ads.adsEnabled) {
             onStatus("Banner: SDK not ready")
+            container.visibility = View.GONE
             return BannerSlotHandle.NONE
         }
         return AdMobBannerAd(activity, container, collapsible, autoReload, reloadGapMs, onStatus).also { it.load(isReload = false) }
@@ -72,7 +74,8 @@ object BannerAds {
  * is requested collapsible again, so it opens expanded. On a reload the shimmer stays up at least
  * [BannerSlotReloader.MIN_RELOAD_SHIMMER_MS], so the swap never looks like a flicker. A banner loaded
  * while the activity isn't resumed waits for onResume, so the reload gap - which starts when the
- * banner is shown - only ever counts time it was actually on screen. Main thread only, except the
+ * banner is shown - only ever counts time it was actually on screen. A failed load hides [container]
+ * until the next load puts its shimmer back. Main thread only, except the
  * SDK callbacks, which hop back via [Activity.runOnUiThread].
  */
 private class AdMobBannerAd(
@@ -112,6 +115,7 @@ private class AdMobBannerAd(
         cancelPendingReveal()
         current?.destroy()
         current = null
+        container.visibility = View.VISIBLE
         showShimmer()
         minShimmerUntil = if (isReload) SystemClock.elapsedRealtime() + BannerSlotReloader.MIN_RELOAD_SHIMMER_MS else 0L
         fun isStale() = destroyed || gen != generation
@@ -157,7 +161,9 @@ private class AdMobBannerAd(
                 activity.runOnUiThread {
                     if (isStale()) return@runOnUiThread
                     onStatus("Banner: $error")
+                    // No banner to show - free the slot instead of leaving an empty strip.
                     clearShimmer()
+                    container.visibility = View.GONE
                     reloader.onFailed()
                 }
             },

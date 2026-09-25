@@ -31,6 +31,10 @@ private const val POLL_INTERVAL_MS = 400L
  * ([onViewRecycled]) and simply never claims an ad, instead of wasting a dedicated request of its
  * own. Once a position wins an ad it keeps it forever and never polls again for that position.
  *
+ * A slot with no ad coming ([NativeAds.isUnavailable]: ads off, SDK not ready, or the load failed)
+ * collapses to nothing instead of shimmering forever; each newly bound slot retries the load once.
+ * [hideAds] (e.g. the user just went premium) drops every ad and collapses every slot for good.
+ *
  * Subclasses only provide how to create/bind the content item's own ViewHolder.
  */
 abstract class BaseAdRecyclerAdapter<T>(
@@ -40,6 +44,7 @@ abstract class BaseAdRecyclerAdapter<T>(
 ) : BaseRecyclerAdapter<AdFeedItem<T>, RecyclerView.ViewHolder>(items) {
 
     private val loadedAds = mutableMapOf<Int, NativeAd>()
+    private var adsHidden = false
 
     protected abstract fun onCreateContentViewHolder(parent: ViewGroup): RecyclerView.ViewHolder
     protected abstract fun onBindContent(holder: RecyclerView.ViewHolder, value: T, position: Int)
@@ -66,11 +71,17 @@ abstract class BaseAdRecyclerAdapter<T>(
     }
 
     private fun bindAdSlot(holder: NativeAdViewHolder, position: Int) {
+        if (adsHidden) {
+            holder.hide()
+            return
+        }
         val cached = loadedAds[position]
         if (cached != null) {
             holder.show(cached)
             return
         }
+        // Retry once per newly bound slot if an earlier load failed; a no-op while one is loading or cached.
+        NativeAds.preload(placement)
         holder.showShimmer()
         holder.startPolling(placement) { ad -> loadedAds[position] = ad }
     }
@@ -85,10 +96,25 @@ abstract class BaseAdRecyclerAdapter<T>(
         loadedAds.clear()
     }
 
+    /** Drops every ad and collapses every ad slot for the rest of this list's life - e.g. the user went premium. */
+    fun hideAds() {
+        if (adsHidden) return
+        adsHidden = true
+        release()
+        notifyItemRangeChanged(0, itemCount)
+    }
+
     private class NativeAdViewHolder(
         private val activity: Activity,
         private val container: FrameLayout,
     ) : RecyclerView.ViewHolder(container) {
+
+        // The slot's size as inflated from item_native_ad_slot, restored whenever it shows again.
+        private val slotMinHeight = container.minimumHeight
+        private val slotParams = container.layoutParams as RecyclerView.LayoutParams
+        private val slotHeight = slotParams.height
+        private val slotMarginTop = slotParams.topMargin
+        private val slotMarginBottom = slotParams.bottomMargin
 
         private val pollRunnable = Runnable { poll() }
         private var placement: NativePlacement? = null
@@ -102,6 +128,11 @@ abstract class BaseAdRecyclerAdapter<T>(
 
         private fun poll() {
             val placement = placement ?: return
+            // Checked before polling: poll() itself would kick off a fresh load and mask the failure.
+            if (NativeAds.isUnavailable(placement)) {
+                hide()
+                return
+            }
             val ad = NativeAds.poll(placement)
             if (ad != null) {
                 onWon?.invoke(ad)
@@ -122,6 +153,29 @@ abstract class BaseAdRecyclerAdapter<T>(
             populate(ad, binding)
             container.removeAllViews()
             container.addView(binding.root)
+            setCollapsed(false)
+        }
+
+        /** No ad for this slot - collapse it to nothing. */
+        fun hide() {
+            cancelPolling()
+            container.removeAllViews()
+            setCollapsed(true)
+        }
+
+        /**
+         * RecyclerView lays out an item by its measured size whatever its visibility, so GONE alone
+         * still leaves the slot's minHeight and margins as a blank gap. Collapsing zeroes all three;
+         * un-collapsing puts back the values from the layout (holders are recycled across slots).
+         */
+        private fun setCollapsed(collapsed: Boolean) {
+            container.visibility = if (collapsed) View.GONE else View.VISIBLE
+            container.minimumHeight = if (collapsed) 0 else slotMinHeight
+            val params = container.layoutParams as RecyclerView.LayoutParams
+            params.height = if (collapsed) 0 else slotHeight
+            params.topMargin = if (collapsed) 0 else slotMarginTop
+            params.bottomMargin = if (collapsed) 0 else slotMarginBottom
+            container.layoutParams = params
         }
 
         private fun populate(ad: NativeAd, binding: AdNativeBinding) {
@@ -149,6 +203,7 @@ abstract class BaseAdRecyclerAdapter<T>(
             val shimmer = AdNativeShimmerBinding.inflate(LayoutInflater.from(activity))
             container.removeAllViews()
             container.addView(shimmer.root)
+            setCollapsed(false)
             shimmer.root.startShimmer()
         }
     }

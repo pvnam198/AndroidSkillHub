@@ -50,6 +50,15 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
                     InterstitialAds.load()
                     NativeAds.preload(NativePlacement.LANGUAGE)
                     lifecycleScope.launch { waitForAdThenNavigate() }
+                } else {
+                    // Ads off (Ads.adsEnabled = false) or consent denied: no ads to wait for, but the
+                    // splash must still move on - otherwise the user is stuck here for good.
+                    binding.bannerContainer.isVisible = false
+                    lifecycleScope.launch {
+                        delay(MIN_DELAY_MS)
+                        waitForRemoteConfig()
+                        navigateToMain()
+                    }
                 }
             }
         }

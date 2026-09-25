@@ -36,6 +36,7 @@ private class NativeAdSlot {
     private var loading = false
     private var pendingCallback: ((NativeAd) -> Unit)? = null
     private var pendingFailure: ((String) -> Unit)? = null
+    private var lastLoadFailed = false
 
     /** Removes and returns the free cached ad if one exists and isn't older than [ttlMs]. */
     @Synchronized
@@ -68,8 +69,13 @@ private class NativeAdSlot {
         }
         if (loading) return false
         loading = true
+        lastLoadFailed = false
         return true
     }
+
+    /** True when the last load came up empty and no new one is running - nothing is coming for now. */
+    @Synchronized
+    fun failedAndIdle(): Boolean = lastLoadFailed && !loading
 
     /** Whether a cached ad is sitting free and not yet expired, without consuming it. */
     @Synchronized
@@ -102,6 +108,7 @@ private class NativeAdSlot {
     @Synchronized
     fun onLoadFailed(): ((String) -> Unit)? {
         loading = false
+        lastLoadFailed = true
         val failure = pendingFailure
         pendingCallback = null
         pendingFailure = null
@@ -132,6 +139,14 @@ object NativeAds {
         if (slot.hasFresh(TTL_MS)) return
         startLoad(placement, slot, onReady = null, onFailed = null)
     }
+
+    /**
+     * Whether no ad for [placement] is on its way: ads are off, the SDK isn't ready (consent denied),
+     * or the last load failed and nothing new is loading. For views that [poll], so they can hide
+     * instead of shimmering forever.
+     */
+    fun isUnavailable(placement: NativePlacement): Boolean =
+        !Ads.adsEnabled || !Ads.isReady || slotFor(placement).failedAndIdle()
 
     /**
      * Takes the preloaded ad for [placement], if one is ready, for the caller to display and
@@ -168,7 +183,15 @@ object NativeAds {
         var attachedAd: NativeAd? = null
         var shimmer: AdNativeShimmerBinding? = showShimmer(activity, container)
 
-        val request = request(activity, placement) { ad ->
+        val request = request(
+            activity, placement,
+            onFailed = {
+                // No ad to show - hide the slot instead of leaving a shimmer spinning forever.
+                shimmer?.let { it.root.stopShimmer(); container.removeView(it.root) }
+                shimmer = null
+                container.visibility = View.GONE
+            },
+        ) { ad ->
             shimmer?.let { it.root.stopShimmer(); container.removeView(it.root) }
             shimmer = null
             val view = render(activity, ad)

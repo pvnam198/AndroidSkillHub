@@ -9,6 +9,7 @@ import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.viewbinding.ViewBinding
 import com.namstd.androidskillhub.core.ads.AdHandle
@@ -32,13 +33,15 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
 
     private var bannerHandle: BannerSlotHandle? = null
     private var nativeHandle: AdHandle? = null
+    private var bannerContainer: ViewGroup? = null
+    private var nativeContainer: FrameLayout? = null
 
     /**
      * Loads a banner into [container] and destroys it automatically in [onDestroy].
      * [autoReload] / [reloadGapMs] set its reload timer and default to Remote Config's
      * ([RemoteConfig.bannerSlotAutoReload] / [RemoteConfig.bannerSlotReloadGapMs]); a screen can
      * pass its own. Any other reload trigger (resume, tab switch...) is the screen's own code
-     * calling [reloadBanner].
+     * calling [reloadBanner]. For a premium user nothing loads and [container] is hidden.
      */
     protected fun loadBanner(
         container: ViewGroup,
@@ -46,7 +49,14 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
         autoReload: Boolean = RemoteConfig.bannerSlotAutoReload,
         reloadGapMs: Long = RemoteConfig.bannerSlotReloadGapMs,
     ) {
-        container.post { bannerHandle = BannerAds.load(this, container, collapsible, autoReload, reloadGapMs) }
+        bannerContainer = container
+        if (isPremiumUser()) {
+            container.isVisible = false
+            return
+        }
+        container.post {
+            if (!isPremiumUser()) bannerHandle = BannerAds.load(this, container, collapsible, autoReload, reloadGapMs)
+        }
     }
 
     /** Reloads the banner slot now (e.g. on a tab switch) - ignored while it's already loading. */
@@ -56,10 +66,40 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
 
     /**
      * Loads a native ad for [placement] into [container] and destroys it automatically in
-     * [onDestroy]. See [NativeAds.subscribe] for [preloadOnShow].
+     * [onDestroy]. See [NativeAds.subscribe] for [preloadOnShow]. For a premium user nothing loads
+     * and [container] is hidden.
      */
     protected fun loadNative(container: FrameLayout, placement: NativePlacement, preloadOnShow: Boolean = false) {
-        container.post { nativeHandle = NativeAds.subscribe(this, placement, container, preloadOnShow) }
+        nativeContainer = container
+        if (isPremiumUser()) {
+            container.isVisible = false
+            return
+        }
+        container.post {
+            if (!isPremiumUser()) nativeHandle = NativeAds.subscribe(this, placement, container, preloadOnShow)
+        }
+    }
+
+    /**
+     * Runs on every onResume with whether the user is premium - like the reference app's base - so
+     * a screen that was open or in the back stack when the user upgraded drops its ads as soon as
+     * they come back to it. The default tears down this screen's [loadBanner] / [loadNative] ads and
+     * hides their containers; a screen with ads of its own (a feed, a dialog...) overrides this to
+     * hide those too, calling super.
+     */
+    protected open fun onPremiumUser(premium: Boolean) {
+        if (premium) hideAds()
+    }
+
+    protected fun isPremiumUser(): Boolean = prefs.isPremium
+
+    private fun hideAds() {
+        bannerHandle?.destroy()
+        bannerHandle = null
+        nativeHandle?.destroy()
+        nativeHandle = null
+        bannerContainer?.isVisible = false
+        nativeContainer?.isVisible = false
     }
 
     /**
@@ -123,6 +163,11 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        onPremiumUser(isPremiumUser())
+    }
+
     final override fun onDestroy() {
         try {
             releaseResources()
@@ -131,6 +176,8 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
             bannerHandle = null
             nativeHandle?.destroy()
             nativeHandle = null
+            bannerContainer = null
+            nativeContainer = null
             super.onDestroy()
         }
     }
