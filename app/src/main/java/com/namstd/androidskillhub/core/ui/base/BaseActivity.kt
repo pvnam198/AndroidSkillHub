@@ -14,6 +14,7 @@ import androidx.viewbinding.ViewBinding
 import com.namstd.androidskillhub.core.ads.AdHandle
 import com.namstd.androidskillhub.core.ads.Ads
 import com.namstd.androidskillhub.core.ads.BannerAds
+import com.namstd.androidskillhub.core.ads.BannerSlotHandle
 import com.namstd.androidskillhub.core.ads.FullScreenGate
 import com.namstd.androidskillhub.core.ads.InterstitialAds
 import com.namstd.androidskillhub.core.ads.NativeAds
@@ -29,12 +30,28 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
 
     protected val prefs: AppPreferences get() = AppPreferences.getInstance(this)
 
-    private var bannerHandle: AdHandle? = null
+    private var bannerHandle: BannerSlotHandle? = null
     private var nativeHandle: AdHandle? = null
 
-    /** Loads a banner into [container] and destroys it automatically in [onDestroy]. */
-    protected fun loadBanner(container: ViewGroup, collapsible: Boolean = false) {
-        container.post { bannerHandle = BannerAds.load(this, container, collapsible) }
+    /**
+     * Loads a banner into [container] and destroys it automatically in [onDestroy].
+     * [autoReload] / [reloadGapMs] set its reload timer and default to Remote Config's
+     * ([RemoteConfig.bannerSlotAutoReload] / [RemoteConfig.bannerSlotReloadGapMs]); a screen can
+     * pass its own. Any other reload trigger (resume, tab switch...) is the screen's own code
+     * calling [reloadBanner].
+     */
+    protected fun loadBanner(
+        container: ViewGroup,
+        collapsible: Boolean = false,
+        autoReload: Boolean = RemoteConfig.bannerSlotAutoReload,
+        reloadGapMs: Long = RemoteConfig.bannerSlotReloadGapMs,
+    ) {
+        container.post { bannerHandle = BannerAds.load(this, container, collapsible, autoReload, reloadGapMs) }
+    }
+
+    /** Reloads the banner slot now (e.g. on a tab switch) - ignored while it's already loading. */
+    protected fun reloadBanner() {
+        bannerHandle?.reload()
     }
 
     /**

@@ -29,17 +29,23 @@ object BannerAds {
      * collapses into [container] as a small strip). This is the single entry point for both so every
      * screen's [collapsible] slot gets the swap for free. Pure routing - the actual loads live in
      * [loadAdMobBanner] and [NativeCollapseAd].
+     *
+     * [autoReload] / [reloadGapMs] set the slot's reload timer (off, or 0, for none) - supplied by the
+     * caller, never read from config here; the returned
+     * handle's [BannerSlotHandle.reload] reloads it on demand, e.g. on a tab switch - see [BannerSlotReloader].
      */
     fun load(
         activity: Activity,
         container: ViewGroup,
         collapsible: Boolean = false,
+        autoReload: Boolean,
+        reloadGapMs: Long,
         onStatus: (String) -> Unit = {},
-    ): AdHandle {
+    ): BannerSlotHandle {
         if (collapsible && RemoteConfig.useNativeCollapsible) {
-            return NativeCollapseAd(activity, container, onStatus = onStatus).start()
+            return NativeCollapseAd(activity, container, autoReload = autoReload, reloadGapMs = reloadGapMs, onStatus = onStatus).start()
         }
-        return loadAdMobBanner(activity, container, collapsible, onStatus)
+        return loadAdMobBanner(activity, container, collapsible, autoReload, reloadGapMs, onStatus)
     }
 
     /** Loads a real AdMob banner into [container] - plain, or AdMob's own collapsible variant when [collapsible]. */
@@ -47,22 +53,24 @@ object BannerAds {
         activity: Activity,
         container: ViewGroup,
         collapsible: Boolean,
+        autoReload: Boolean,
+        reloadGapMs: Long,
         onStatus: (String) -> Unit,
-    ): AdHandle {
+    ): BannerSlotHandle {
         if (!Ads.isReady || !Ads.adsEnabled) {
             onStatus("Banner: SDK not ready")
-            return AdHandle {}
+            return BannerSlotHandle.NONE
         }
-        return AdMobBannerAd(activity, container, collapsible, onStatus).also { it.load(isReload = false) }
+        return AdMobBannerAd(activity, container, collapsible, autoReload, reloadGapMs, onStatus).also { it.load(isReload = false) }
     }
 }
 
 /**
  * One AdMob banner slot in [container]. Each load - the first one and every auto reload (see
- * [AutoReloadTimer]) - drops the previous banner and puts the slot back to its small shimmer
+ * [BannerSlotReloader]) - drops the previous banner and puts the slot back to its small shimmer
  * straight away, then swaps in the new banner once it's loaded; for [collapsible] that new banner
  * is requested collapsible again, so it opens expanded. On a reload the shimmer stays up at least
- * [AutoReloadTimer.MIN_RELOAD_SHIMMER_MS], so the swap never looks like a flicker. A banner loaded
+ * [BannerSlotReloader.MIN_RELOAD_SHIMMER_MS], so the swap never looks like a flicker. A banner loaded
  * while the activity isn't resumed waits for onResume, so the reload gap - which starts when the
  * banner is shown - only ever counts time it was actually on screen. Main thread only, except the
  * SDK callbacks, which hop back via [Activity.runOnUiThread].
@@ -71,10 +79,12 @@ private class AdMobBannerAd(
     private val activity: Activity,
     private val container: ViewGroup,
     private val collapsible: Boolean,
+    autoReload: Boolean,
+    reloadGapMs: Long,
     private val onStatus: (String) -> Unit,
-) : AdHandle {
+) : BannerSlotHandle {
     private val handler = Handler(Looper.getMainLooper())
-    private val reloadTimer = AutoReloadTimer(activity) { load(isReload = true) }
+    private val reloader = BannerSlotReloader(activity, autoReload, reloadGapMs) { load(isReload = true) }
     private var current: AdView? = null
     /** A loaded banner waiting to be shown - for the reload's minimum shimmer, or for onResume. */
     private var pendingView: AdView? = null
@@ -98,11 +108,12 @@ private class AdMobBannerAd(
     fun load(isReload: Boolean) {
         if (destroyed) return
         val gen = ++generation
+        reloader.onLoadStarted()
         cancelPendingReveal()
         current?.destroy()
         current = null
         showShimmer()
-        minShimmerUntil = if (isReload) SystemClock.elapsedRealtime() + AutoReloadTimer.MIN_RELOAD_SHIMMER_MS else 0L
+        minShimmerUntil = if (isReload) SystemClock.elapsedRealtime() + BannerSlotReloader.MIN_RELOAD_SHIMMER_MS else 0L
         fun isStale() = destroyed || gen != generation
 
         val widthPixels = if (container.width > 0) container.width else activity.resources.displayMetrics.widthPixels
@@ -147,7 +158,7 @@ private class AdMobBannerAd(
                     if (isStale()) return@runOnUiThread
                     onStatus("Banner: $error")
                     clearShimmer()
-                    reloadTimer.schedule()
+                    reloader.onFailed()
                 }
             },
         )
@@ -174,8 +185,10 @@ private class AdMobBannerAd(
         container.removeAllViews()
         container.addView(adView)
         onStatus("Banner: ready")
-        reloadTimer.schedule()
+        reloader.onShown()
     }
+
+    override fun reload() = reloader.reloadNow()
 
     private fun cancelPendingReveal() {
         handler.removeCallbacks(revealRunnable)
@@ -200,7 +213,7 @@ private class AdMobBannerAd(
     override fun destroy() {
         destroyed = true
         activity.runOnUiThread {
-            reloadTimer.cancel()
+            reloader.cancel()
             lifecycle?.removeObserver(lifecycleObserver)
             cancelPendingReveal()
             current?.destroy()

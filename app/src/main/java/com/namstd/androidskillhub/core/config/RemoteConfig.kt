@@ -40,7 +40,7 @@ object RemoteConfig {
                 KEY_USE_NATIVE_COLLAPSIBLE to prefs.getCachedBoolean(KEY_USE_NATIVE_COLLAPSIBLE, false),
                 KEY_BANNER_SLOT_AUTO_RELOAD to prefs.getCachedBoolean(KEY_BANNER_SLOT_AUTO_RELOAD, false),
                 KEY_BANNER_SLOT_RELOAD_GAP_SECONDS to
-                    prefs.getCachedLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS, 30L),
+                    prefs.getCachedLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS, 0L),
                 KEY_INTER_INTER_GAP_SECONDS to prefs.getCachedLong(KEY_INTER_INTER_GAP_SECONDS, 0L),
                 KEY_OPEN_OPEN_GAP_SECONDS to prefs.getCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, 0L),
                 KEY_INTER_OPEN_GAP_SECONDS to prefs.getCachedLong(KEY_INTER_OPEN_GAP_SECONDS, 0L),
@@ -89,9 +89,12 @@ object RemoteConfig {
     val bannerSlotAutoReload: Boolean
         get() = remoteConfig.getBoolean(KEY_BANNER_SLOT_AUTO_RELOAD)
 
-    /** Time from the banner slot's ad being shown (or failing) to its next auto reload - see [bannerSlotAutoReload]. Floored at 10s so a bad value can't spam requests. */
+    /**
+     * The banner slot's reload timer: time from its ad being shown (or failing) to the next reload -
+     * see [bannerSlotAutoReload]. Default 0 = no timer. Screens that reload by hand ignore it.
+     */
     val bannerSlotReloadGapMs: Long
-        get() = remoteConfig.getLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS).coerceAtLeast(10L) * 1000
+        get() = remoteConfig.getLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS).coerceAtLeast(0L) * 1000
 
     /** Minimum time between two Interstitial shows. See [com.namstd.androidskillhub.core.ads.AdGapGate]. */
     val interInterGapMs: Long

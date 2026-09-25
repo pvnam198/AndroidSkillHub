@@ -16,7 +16,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView
-import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.databinding.AdBannerShimmerBinding
 import com.namstd.androidskillhub.databinding.AdNativeCollapseBinding
 import com.namstd.androidskillhub.databinding.AdNativeCollapseSmallBinding
@@ -31,9 +30,9 @@ import com.namstd.androidskillhub.databinding.AdNativeCollapseSmallBinding
  * An ad that arrives while the activity isn't resumed waits for onResume before opening, so the
  * large view never pops up behind another screen. No fill hides [container].
  *
- * Auto reload ([AutoReloadTimer], per [RemoteConfig.bannerSlotAutoReload]) drops the current ad - large
+ * A reload ([BannerSlotReloader]'s timer, or the screen calling [reload]) drops the current ad - large
  * or small - and puts the slot back to its small shimmer, then opens the new ad large again. The
- * shimmer stays up at least [AutoReloadTimer.MIN_RELOAD_SHIMMER_MS]; a failed reload hides the slot
+ * shimmer stays up at least [BannerSlotReloader.MIN_RELOAD_SHIMMER_MS]; a failed reload hides the slot
  * until the next one.
  *
  * Call [start] once; the owner destroys it via [AdHandle.destroy], which also destroys the ad.
@@ -42,8 +41,10 @@ internal class NativeCollapseAd(
     private val activity: Activity,
     private val container: ViewGroup,
     private val placement: NativePlacement = NativePlacement.NATIVE_COLLAPSIBLE,
+    autoReload: Boolean,
+    reloadGapMs: Long,
     private val onStatus: (String) -> Unit = {},
-) : AdHandle {
+) : BannerSlotHandle {
     enum class State { IDLE, LOADING, LARGE, SMALL, HIDDEN }
 
     var state: State = State.IDLE
@@ -59,7 +60,7 @@ internal class NativeCollapseAd(
     private var pendingAd: NativeAd? = null
     private var destroyed = false
     private val handler = Handler(Looper.getMainLooper())
-    private val reloadTimer = AutoReloadTimer(activity, ::reload)
+    private val reloader = BannerSlotReloader(activity, autoReload, reloadGapMs, ::reloadNow)
     /** When the current load's shimmer went up, if it has to stay a minimum time (reloads only). */
     private var minShimmerUntil = 0L
     private val revealRunnable = Runnable { revealPending() }
@@ -87,6 +88,7 @@ internal class NativeCollapseAd(
 
     private fun requestAd() {
         onStatus("Native collapsible: loading")
+        reloader.onLoadStarted()
         request?.destroy()
         request = NativeAds.request(
             activity, placement,
@@ -94,7 +96,7 @@ internal class NativeCollapseAd(
                 request = null
                 onStatus("Native collapsible: $error")
                 hide()
-                reloadTimer.schedule()
+                reloader.onFailed()
             },
             onReady = { ad ->
                 request = null
@@ -139,11 +141,13 @@ internal class NativeCollapseAd(
         onStatus("Native collapsible: large")
         // This ad is now in use - get the next one warm for the next screen (or reload) that asks.
         NativeAds.preload(placement)
-        reloadTimer.schedule()
+        reloader.onShown()
     }
 
-    /** Auto reload: drop the current ad, back to the small shimmer, and open the next ad large once it's in. */
-    private fun reload() {
+    override fun reload() = reloader.reloadNow()
+
+    /** Reload: drop the current ad, back to the small shimmer, and open the next ad large once it's in. */
+    private fun reloadNow() {
         if (destroyed) return
         request?.destroy()
         request = null
@@ -159,7 +163,7 @@ internal class NativeCollapseAd(
         state = State.LOADING
         container.visibility = View.VISIBLE
         showShimmer()
-        minShimmerUntil = SystemClock.elapsedRealtime() + AutoReloadTimer.MIN_RELOAD_SHIMMER_MS
+        minShimmerUntil = SystemClock.elapsedRealtime() + BannerSlotReloader.MIN_RELOAD_SHIMMER_MS
         requestAd()
     }
 
@@ -196,7 +200,7 @@ internal class NativeCollapseAd(
         if (destroyed) return
         destroyed = true
         runOnMainThread {
-            reloadTimer.cancel()
+            reloader.cancel()
             handler.removeCallbacks(revealRunnable)
             lifecycle?.removeObserver(lifecycleObserver)
             request?.destroy()

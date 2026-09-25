@@ -9,14 +9,16 @@ import androidx.fragment.app.Fragment
 import androidx.viewbinding.ViewBinding
 import com.namstd.androidskillhub.core.ads.AdHandle
 import com.namstd.androidskillhub.core.ads.BannerAds
+import com.namstd.androidskillhub.core.ads.BannerSlotHandle
 import com.namstd.androidskillhub.core.ads.NativeAds
 import com.namstd.androidskillhub.core.ads.NativePlacement
+import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.preferences.AppPreferences
 
 abstract class BaseFragment<VB : ViewBinding> : Fragment() {
 
     private var _binding: VB? = null
-    private var bannerHandle: AdHandle? = null
+    private var bannerHandle: BannerSlotHandle? = null
     private var nativeHandle: AdHandle? = null
 
     protected val binding: VB
@@ -26,9 +28,27 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment() {
 
     protected val prefs: AppPreferences get() = AppPreferences.getInstance(requireContext())
 
-    /** Loads a banner into [container] and destroys it automatically when the view is torn down. */
-    protected fun loadBanner(container: ViewGroup, collapsible: Boolean = false) {
-        container.post { if (_binding != null) bannerHandle = BannerAds.load(requireActivity(), container, collapsible) }
+    /**
+     * Loads a banner into [container] and destroys it automatically when the view is torn down.
+     * [autoReload] / [reloadGapMs] set its reload timer and default to Remote Config's
+     * ([RemoteConfig.bannerSlotAutoReload] / [RemoteConfig.bannerSlotReloadGapMs]); a screen can
+     * pass its own. Any other reload trigger (resume, tab switch...) is the screen's own code
+     * calling [reloadBanner].
+     */
+    protected fun loadBanner(
+        container: ViewGroup,
+        collapsible: Boolean = false,
+        autoReload: Boolean = RemoteConfig.bannerSlotAutoReload,
+        reloadGapMs: Long = RemoteConfig.bannerSlotReloadGapMs,
+    ) {
+        container.post {
+            if (_binding != null) bannerHandle = BannerAds.load(requireActivity(), container, collapsible, autoReload, reloadGapMs)
+        }
+    }
+
+    /** Reloads the banner slot now (e.g. on a tab switch) - ignored while it's already loading. */
+    protected fun reloadBanner() {
+        bannerHandle?.reload()
     }
 
     /**

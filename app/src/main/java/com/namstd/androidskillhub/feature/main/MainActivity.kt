@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayoutMediator
 import com.namstd.androidskillhub.core.ads.AppOpenAds
 import com.namstd.androidskillhub.core.ads.NativeAds
@@ -14,6 +15,9 @@ import com.namstd.androidskillhub.feature.settings.SettingsActivity
 
 class MainActivity : BaseActivity<ActivityMainBinding>() {
 
+    /** The first onResume is the screen opening, where the banner is already loading - only later ones reload. */
+    private var hasResumedOnce = false
+
     override fun inflateBinding(inflater: LayoutInflater): ActivityMainBinding =
         ActivityMainBinding.inflate(inflater)
 
@@ -23,7 +27,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     override fun initViews() {
         AppOpenAds.load()
-        loadBanner(binding.bannerContainer, collapsible = true)
+        // Main reloads its banner slot by hand - on resume and on tab switch - instead of on a timer.
+        loadBanner(binding.bannerContainer, collapsible = true, autoReload = false)
         binding.mainFeedPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount() = TAB_COUNT
             override fun createFragment(position: Int) = MainFeedPageFragment.newInstance(position)
@@ -34,7 +39,22 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 
     override fun initListeners() {
+        binding.mainFeedPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            private var lastPosition = binding.mainFeedPager.currentItem
+
+            override fun onPageSelected(position: Int) {
+                // ViewPager2 also calls this for the initial page (and on restore) - only a real switch reloads.
+                if (position == lastPosition) return
+                lastPosition = position
+                reloadBanner()
+            }
+        })
         binding.ivSetting.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (hasResumedOnce) reloadBanner() else hasResumedOnce = true
     }
 
     override fun releaseResources() {
