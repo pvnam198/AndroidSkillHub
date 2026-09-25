@@ -12,7 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /** Feature flags controlled from Firebase Remote Config. */
 object RemoteConfig {
-    private val remoteConfig = Firebase.remoteConfig
+    // Getter, not a field: Firebase caches the instance itself, and holding it in this object trips lint's StaticFieldLeak.
+    private val remoteConfig get() = Firebase.remoteConfig
     private lateinit var prefs: AppPreferences
 
     private val _isReady = MutableStateFlow(false)
@@ -36,7 +37,10 @@ object RemoteConfig {
         remoteConfig.setDefaultsAsync(
             mapOf(
                 KEY_USE_CUSTOM_INTERSTITIAL to prefs.getCachedBoolean(KEY_USE_CUSTOM_INTERSTITIAL, false),
-                KEY_USE_NATIVE_COLLAPSE_BANNER to prefs.getCachedBoolean(KEY_USE_NATIVE_COLLAPSE_BANNER, false),
+                KEY_USE_NATIVE_COLLAPSIBLE to prefs.getCachedBoolean(KEY_USE_NATIVE_COLLAPSIBLE, false),
+                KEY_BANNER_SLOT_AUTO_RELOAD to prefs.getCachedBoolean(KEY_BANNER_SLOT_AUTO_RELOAD, false),
+                KEY_BANNER_SLOT_RELOAD_GAP_SECONDS to
+                    prefs.getCachedLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS, 30L),
                 KEY_INTER_INTER_GAP_SECONDS to prefs.getCachedLong(KEY_INTER_INTER_GAP_SECONDS, 0L),
                 KEY_OPEN_OPEN_GAP_SECONDS to prefs.getCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, 0L),
                 KEY_INTER_OPEN_GAP_SECONDS to prefs.getCachedLong(KEY_INTER_OPEN_GAP_SECONDS, 0L),
@@ -53,7 +57,9 @@ object RemoteConfig {
 
     private fun persistToCache() {
         prefs.putCachedBoolean(KEY_USE_CUSTOM_INTERSTITIAL, useCustomInterstitial)
-        prefs.putCachedBoolean(KEY_USE_NATIVE_COLLAPSE_BANNER, useNativeCollapseBanner)
+        prefs.putCachedBoolean(KEY_USE_NATIVE_COLLAPSIBLE, useNativeCollapsible)
+        prefs.putCachedBoolean(KEY_BANNER_SLOT_AUTO_RELOAD, bannerSlotAutoReload)
+        prefs.putCachedLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS, bannerSlotReloadGapMs / 1000)
         prefs.putCachedLong(KEY_INTER_INTER_GAP_SECONDS, interInterGapMs / 1000)
         prefs.putCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, openOpenGapMs / 1000)
         prefs.putCachedLong(KEY_INTER_OPEN_GAP_SECONDS, interOpenGapMs / 1000)
@@ -65,9 +71,27 @@ object RemoteConfig {
     val useCustomInterstitial: Boolean
         get() = remoteConfig.getBoolean(KEY_USE_CUSTOM_INTERSTITIAL)
 
-    /** Whether [com.namstd.androidskillhub.core.ads.BannerAds.load] should build a plain banner + toggleable native ad instead of AdMob's collapsible banner. */
-    val useNativeCollapseBanner: Boolean
-        get() = remoteConfig.getBoolean(KEY_USE_NATIVE_COLLAPSE_BANNER)
+    /**
+     * Which collapsible ad [com.namstd.androidskillhub.core.ads.BannerAds.load] builds: true for the
+     * native collapsible (one native ad, large then small - see [com.namstd.androidskillhub.core.ads.NativeCollapseAd]),
+     * false for AdMob's own collapsible banner.
+     */
+    val useNativeCollapsible: Boolean
+        get() = remoteConfig.getBoolean(KEY_USE_NATIVE_COLLAPSIBLE)
+
+    /**
+     * Whether the banner slot - what [com.namstd.androidskillhub.core.ads.BannerAds.load] puts in a
+     * screen's banner container: an AdMob banner (plain or collapsible), or the custom native
+     * collapsible when [useNativeCollapsible] swaps it in - reloads every [bannerSlotReloadGapMs]
+     * while its screen is shown. No other native ad in the app (feed, onboarding, post-interstitial)
+     * is affected.
+     */
+    val bannerSlotAutoReload: Boolean
+        get() = remoteConfig.getBoolean(KEY_BANNER_SLOT_AUTO_RELOAD)
+
+    /** Time from the banner slot's ad being shown (or failing) to its next auto reload - see [bannerSlotAutoReload]. Floored at 10s so a bad value can't spam requests. */
+    val bannerSlotReloadGapMs: Long
+        get() = remoteConfig.getLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS).coerceAtLeast(10L) * 1000
 
     /** Minimum time between two Interstitial shows. See [com.namstd.androidskillhub.core.ads.AdGapGate]. */
     val interInterGapMs: Long
@@ -90,7 +114,9 @@ object RemoteConfig {
         get() = remoteConfig.getLong(KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS) * 1000
 
     private const val KEY_USE_CUSTOM_INTERSTITIAL = "use_custom_interstitial"
-    private const val KEY_USE_NATIVE_COLLAPSE_BANNER = "use_native_collapse_banner"
+    private const val KEY_USE_NATIVE_COLLAPSIBLE = "use_native_collapsible"
+    private const val KEY_BANNER_SLOT_AUTO_RELOAD = "banner_slot_auto_reload"
+    private const val KEY_BANNER_SLOT_RELOAD_GAP_SECONDS = "banner_slot_reload_gap_seconds"
     private const val KEY_INTER_INTER_GAP_SECONDS = "inter_inter_gap_seconds"
     private const val KEY_OPEN_OPEN_GAP_SECONDS = "open_open_gap_seconds"
     private const val KEY_INTER_OPEN_GAP_SECONDS = "inter_open_gap_seconds"

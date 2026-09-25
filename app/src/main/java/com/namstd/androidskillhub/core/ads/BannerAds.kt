@@ -2,13 +2,14 @@ package com.namstd.androidskillhub.core.ads
 
 import android.app.Activity
 import android.os.Bundle
-import android.view.Gravity
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import com.google.android.libraries.ads.mobile.sdk.banner.AdSize
 import com.google.android.libraries.ads.mobile.sdk.banner.AdView
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
@@ -17,24 +18,17 @@ import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView
 import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.databinding.AdBannerShimmerBinding
-import com.namstd.androidskillhub.databinding.AdNativeCollapseBinding
 
 object BannerAds {
     /**
-     * Loads a banner into [container]. When [collapsible] is true, either shows AdMob's native
-     * collapsible banner, or - if [RemoteConfig.useNativeCollapseBanner] is on - a plain banner in
-     * [container] that gets fully covered by a native ad strip floated over the activity's content
-     * (the "custom collapse banner", backed by the shared [NativePlacement.COLLAPSE_BANNER] slot).
-     * The native strip is added outside [container]'s own layout flow (bottom-docked over the
-     * activity's content root), so - like AdMob's real collapsible banner - it never pushes the
-     * screen's content, it draws over it; [container] itself is just hidden (not resized) while the
-     * strip is up, so nothing jumps when it's dismissed and the plain banner reappears. This is the
-     * single entry point for both variants so every screen's [collapsible] slot gets the swap for
-     * free via Remote Config. Pure routing - the actual AdMob load lives in [loadAdMobBanner].
+     * Loads a banner into [container]. When [collapsible] is true, Remote Config picks one of two
+     * variants: AdMob's own collapsible banner, or - if [RemoteConfig.useNativeCollapsible] is on -
+     * the native collapsible ([NativeCollapseAd]: one native ad that opens large over the screen and
+     * collapses into [container] as a small strip). This is the single entry point for both so every
+     * screen's [collapsible] slot gets the swap for free. Pure routing - the actual loads live in
+     * [loadAdMobBanner] and [NativeCollapseAd].
      */
     fun load(
         activity: Activity,
@@ -42,8 +36,8 @@ object BannerAds {
         collapsible: Boolean = false,
         onStatus: (String) -> Unit = {},
     ): AdHandle {
-        if (collapsible && RemoteConfig.useNativeCollapseBanner) {
-            return loadNativeCollapseBanner(activity, container, onStatus)
+        if (collapsible && RemoteConfig.useNativeCollapsible) {
+            return NativeCollapseAd(activity, container, onStatus = onStatus).start()
         }
         return loadAdMobBanner(activity, container, collapsible, onStatus)
     }
@@ -59,14 +53,57 @@ object BannerAds {
             onStatus("Banner: SDK not ready")
             return AdHandle {}
         }
-        var current: AdView? = null
-        var destroyed = false
-        var shimmer: AdBannerShimmerBinding? = showShimmer(activity, container)
+        return AdMobBannerAd(activity, container, collapsible, onStatus).also { it.load(isReload = false) }
+    }
+}
 
-        fun clearShimmer() {
-            shimmer?.let { it.root.stopShimmer(); container.removeView(it.root) }
-            shimmer = null
+/**
+ * One AdMob banner slot in [container]. Each load - the first one and every auto reload (see
+ * [AutoReloadTimer]) - drops the previous banner and puts the slot back to its small shimmer
+ * straight away, then swaps in the new banner once it's loaded; for [collapsible] that new banner
+ * is requested collapsible again, so it opens expanded. On a reload the shimmer stays up at least
+ * [AutoReloadTimer.MIN_RELOAD_SHIMMER_MS], so the swap never looks like a flicker. A banner loaded
+ * while the activity isn't resumed waits for onResume, so the reload gap - which starts when the
+ * banner is shown - only ever counts time it was actually on screen. Main thread only, except the
+ * SDK callbacks, which hop back via [Activity.runOnUiThread].
+ */
+private class AdMobBannerAd(
+    private val activity: Activity,
+    private val container: ViewGroup,
+    private val collapsible: Boolean,
+    private val onStatus: (String) -> Unit,
+) : AdHandle {
+    private val handler = Handler(Looper.getMainLooper())
+    private val reloadTimer = AutoReloadTimer(activity) { load(isReload = true) }
+    private var current: AdView? = null
+    /** A loaded banner waiting to be shown - for the reload's minimum shimmer, or for onResume. */
+    private var pendingView: AdView? = null
+    private var minShimmerUntil = 0L
+    private val revealRunnable = Runnable { revealPending() }
+    private val lifecycle: Lifecycle? = (activity as? LifecycleOwner)?.lifecycle
+    private val lifecycleObserver = object : DefaultLifecycleObserver {
+        override fun onResume(owner: LifecycleOwner) {
+            revealPending()
         }
+    }
+    private var shimmer: AdBannerShimmerBinding? = null
+    /** Bumped on every load; a callback from an older load finds it changed and bows out. */
+    @Volatile private var generation = 0
+    @Volatile private var destroyed = false
+
+    init {
+        lifecycle?.addObserver(lifecycleObserver)
+    }
+
+    fun load(isReload: Boolean) {
+        if (destroyed) return
+        val gen = ++generation
+        cancelPendingReveal()
+        current?.destroy()
+        current = null
+        showShimmer()
+        minShimmerUntil = if (isReload) SystemClock.elapsedRealtime() + AutoReloadTimer.MIN_RELOAD_SHIMMER_MS else 0L
+        fun isStale() = destroyed || gen != generation
 
         val widthPixels = if (container.width > 0) container.width else activity.resources.displayMetrics.widthPixels
         val widthDp = (widthPixels / activity.resources.displayMetrics.density).toInt().coerceAtLeast(320)
@@ -74,7 +111,7 @@ object BannerAds {
         val ids = if (collapsible) Ads.ids.bannerCollapsible else Ads.ids.banner
         WaterfallLoader<AdView>(ids).load(
             attempt = { id, loaded, failed ->
-                if (!destroyed) onStatus("Banner: loading $id")
+                if (!isStale()) onStatus("Banner: loading $id")
                 val adView = AdView(activity)
                 val request = BannerAdRequest.Builder(id, size).apply {
                     if (collapsible) setGoogleExtrasBundle(Bundle().apply { putString("collapsible", "bottom") })
@@ -90,134 +127,86 @@ object BannerAds {
                         }
                         override fun onAdFailedToLoad(adError: LoadAdError) {
                             adView.destroy()
-                            if (!destroyed) failed(adError.message)
+                            if (!isStale()) failed(adError.message)
                         }
                     },
                 )
             },
             onLoaded = { adView, _ ->
                 activity.runOnUiThread {
-                    if (destroyed) adView.destroy() else {
-                        clearShimmer()
-                        current?.destroy()
-                        current = adView
-                        container.removeAllViews()
-                        container.addView(adView)
-                        onStatus("Banner: ready")
+                    if (isStale()) {
+                        adView.destroy()
+                        return@runOnUiThread
                     }
+                    pendingView = adView
+                    revealPending()
                 }
             },
-            onFailed = {
-                if (!destroyed) {
-                    onStatus("Banner: $it")
-                    activity.runOnUiThread { clearShimmer() }
+            onFailed = { error ->
+                activity.runOnUiThread {
+                    if (isStale()) return@runOnUiThread
+                    onStatus("Banner: $error")
+                    clearShimmer()
+                    reloadTimer.schedule()
                 }
             },
         )
-        return AdHandle {
-            destroyed = true
-            activity.runOnUiThread {
-                current?.destroy()
-                current = null
-                clearShimmer()
-                container.removeAllViews()
-            }
+    }
+
+    /** Shows [pendingView] once the minimum shimmer is over and the activity is resumed. */
+    private fun revealPending() {
+        val adView = pendingView ?: return
+        handler.removeCallbacks(revealRunnable)
+        val wait = minShimmerUntil - SystemClock.elapsedRealtime()
+        if (wait > 0) {
+            handler.postDelayed(revealRunnable, wait)
+            return
         }
+        if (lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == false) return // onResume calls back in.
+        pendingView = null
+        show(adView)
+    }
+
+    /** The banner is on screen from here - so this, not the load, is where the reload gap starts. */
+    private fun show(adView: AdView) {
+        clearShimmer()
+        current = adView
+        container.removeAllViews()
+        container.addView(adView)
+        onStatus("Banner: ready")
+        reloadTimer.schedule()
+    }
+
+    private fun cancelPendingReveal() {
+        handler.removeCallbacks(revealRunnable)
+        pendingView?.destroy()
+        pendingView = null
     }
 
     /** Shows a shimmering skeleton in [container] so the banner slot never pops in from empty. */
-    private fun showShimmer(activity: Activity, container: ViewGroup): AdBannerShimmerBinding {
+    private fun showShimmer() {
         val binding = AdBannerShimmerBinding.inflate(LayoutInflater.from(activity))
         container.removeAllViews()
         container.addView(binding.root)
         binding.root.startShimmer()
-        return binding
+        shimmer = binding
     }
 
-    /**
-     * The "custom collapse banner": [container] loads a plain banner as usual. A native ad for
-     * [NativePlacement.COLLAPSE_BANNER] loads in the background into a detached [FrameLayout]; once
-     * it's ready, that layout is docked to the bottom of the activity's content root (floating over
-     * whatever's there, per [attachOverlay]) and [container] is hidden so the banner underneath
-     * isn't obscured by it. Dismissing the strip detaches it for good and reveals the banner again.
-     */
-    private fun loadNativeCollapseBanner(
-        activity: Activity,
-        container: ViewGroup,
-        onStatus: (String) -> Unit,
-    ): AdHandle {
-        val overlay = FrameLayout(activity)
-        val bannerHandle = loadAdMobBanner(activity, container, collapsible = false, onStatus = onStatus)
+    private fun clearShimmer() {
+        shimmer?.let { it.root.stopShimmer(); container.removeView(it.root) }
+        shimmer = null
+    }
 
-        var nativeHandle: AdHandle? = null
-        nativeHandle = NativeAds.subscribe(
-            activity, NativePlacement.COLLAPSE_BANNER, overlay, preloadOnShow = true,
-            render = { act, ad ->
-                container.visibility = View.INVISIBLE
-                attachOverlay(act, overlay)
-                renderCollapsibleNativeCard(act, ad) {
-                    detachOverlay(overlay)
-                    container.visibility = View.VISIBLE
-                    nativeHandle?.destroy()
-                }
-            },
-        )
-
-        return AdHandle {
-            detachOverlay(overlay)
-            nativeHandle.destroy()
-            bannerHandle.destroy()
-            container.visibility = View.VISIBLE
+    override fun destroy() {
+        destroyed = true
+        activity.runOnUiThread {
+            reloadTimer.cancel()
+            lifecycle?.removeObserver(lifecycleObserver)
+            cancelPendingReveal()
+            current?.destroy()
+            current = null
+            clearShimmer()
+            container.removeAllViews()
         }
-    }
-
-    /**
-     * Docks [overlay] to the bottom of [activity]'s content root, outside any screen's own layout
-     * flow, so it floats over the current content instead of pushing it - matching how AdMob's own
-     * collapsible banner expands over the app rather than resizing it. Insets itself off the bottom
-     * system bar since it sits outside the padding [BaseActivity] applies to the screen's own root.
-     */
-    private fun attachOverlay(activity: Activity, overlay: FrameLayout) {
-        if (overlay.parent != null) return
-        overlay.layoutParams = FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT,
-            Gravity.BOTTOM,
-        )
-        ViewCompat.setOnApplyWindowInsetsListener(overlay) { view, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, bars.bottom)
-            insets
-        }
-        activity.window.decorView.findViewById<ViewGroup>(android.R.id.content).addView(overlay)
-    }
-
-    /** Removes [overlay] from wherever [attachOverlay] docked it, if anywhere. */
-    private fun detachOverlay(overlay: FrameLayout) {
-        (overlay.parent as? ViewGroup)?.removeView(overlay)
-    }
-
-    /** Renders a properly-sized native ad card (icon + headline + body + CTA) with a corner close button that dismisses it for good. */
-    private fun renderCollapsibleNativeCard(activity: Activity, ad: NativeAd, onDismiss: () -> Unit): NativeAdView {
-        val binding = AdNativeCollapseBinding.inflate(LayoutInflater.from(activity))
-        val view = binding.root
-        view.headlineView = binding.adHeadline
-        view.bodyView = binding.adBody
-        view.advertiserView = binding.adAdvertiser
-        view.iconView = binding.adIcon
-        view.callToActionView = binding.adCallToAction
-        binding.adHeadline.text = ad.headline
-        binding.adBody.text = ad.body
-        binding.adAdvertiser.text = ad.advertiser
-        binding.adCallToAction.text = ad.callToAction
-        binding.adIcon.setImageDrawable(ad.icon?.drawable)
-        binding.adIcon.visibility = if (ad.icon == null) View.GONE else View.VISIBLE
-        binding.adBody.visibility = if (ad.body == null) View.GONE else View.VISIBLE
-        binding.adAdvertiser.visibility = if (ad.advertiser == null) View.GONE else View.VISIBLE
-        binding.adCallToAction.visibility = if (ad.callToAction == null) View.GONE else View.VISIBLE
-        view.registerNativeAd(ad, binding.adMedia)
-
-        binding.adClose.setOnClickListener { onDismiss() }
-        return view
     }
 }

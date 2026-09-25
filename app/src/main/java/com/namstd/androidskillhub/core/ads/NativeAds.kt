@@ -18,8 +18,8 @@ import com.namstd.androidskillhub.databinding.AdNativeShimmerBinding
 enum class NativePlacement {
     LANGUAGE, ONBOARDING_1, ONBOARDING_2, ONBOARDING_3, ONBOARDING_AD, HOME_FEED, POST_INTERSTITIAL,
 
-    /** Shared app-wide slot for [BannerAds]' custom collapse banner - one placement for every collapsible banner call site. */
-    COLLAPSE_BANNER,
+    /** Shared app-wide slot for [NativeCollapseAd] - one placement for every collapsible call site. */
+    NATIVE_COLLAPSIBLE,
 }
 
 /**
@@ -35,6 +35,7 @@ private class NativeAdSlot {
     private var freeAd: Entry? = null
     private var loading = false
     private var pendingCallback: ((NativeAd) -> Unit)? = null
+    private var pendingFailure: ((String) -> Unit)? = null
 
     /** Removes and returns the free cached ad if one exists and isn't older than [ttlMs]. */
     @Synchronized
@@ -56,12 +57,15 @@ private class NativeAdSlot {
 
     /**
      * Registers [callback] for the next ad to finish loading, or, if null, just ensures a load is
-     * running so the result can be preloaded into [freeAd] for whoever asks next. Returns whether
-     * to actually start a network load.
+     * running so the result can be preloaded into [freeAd] for whoever asks next. [onFailed] is
+     * told if that load fails. Returns whether to actually start a network load.
      */
     @Synchronized
-    fun requestLoad(callback: ((NativeAd) -> Unit)?): Boolean {
-        if (callback != null) pendingCallback = callback
+    fun requestLoad(callback: ((NativeAd) -> Unit)?, onFailed: ((String) -> Unit)?): Boolean {
+        if (callback != null) {
+            pendingCallback = callback
+            pendingFailure = onFailed
+        }
         if (loading) return false
         loading = true
         return true
@@ -77,7 +81,10 @@ private class NativeAdSlot {
     /** Un-registers [callback] if it's still the one waiting, so a late result isn't delivered to a gone view. */
     @Synchronized
     fun cancelLoad(callback: (NativeAd) -> Unit) {
-        if (pendingCallback === callback) pendingCallback = null
+        if (pendingCallback === callback) {
+            pendingCallback = null
+            pendingFailure = null
+        }
     }
 
     /** Returns the callback to notify, or null if nobody is waiting (in which case [ad] is cached as free). */
@@ -86,14 +93,19 @@ private class NativeAdSlot {
         loading = false
         val callback = pendingCallback
         pendingCallback = null
+        pendingFailure = null
         if (callback == null) freeAd = Entry(ad, System.currentTimeMillis())
         return callback
     }
 
+    /** Returns the failure callback to notify, if the subscriber waiting on this load gave one. */
     @Synchronized
-    fun onLoadFailed() {
+    fun onLoadFailed(): ((String) -> Unit)? {
         loading = false
+        val failure = pendingFailure
         pendingCallback = null
+        pendingFailure = null
+        return failure
     }
 
     @Synchronized
@@ -102,6 +114,7 @@ private class NativeAdSlot {
         freeAd = null
         loading = false
         pendingCallback = null
+        pendingFailure = null
     }
 }
 
@@ -117,7 +130,7 @@ object NativeAds {
         if (!Ads.adsEnabled || !Ads.isReady) return
         val slot = slotFor(placement)
         if (slot.hasFresh(TTL_MS)) return
-        startLoad(placement, slot, onReady = null)
+        startLoad(placement, slot, onReady = null, onFailed = null)
     }
 
     /**
@@ -137,8 +150,7 @@ object NativeAds {
     /**
      * @param preloadOnShow Whether to kick off a real reload for [placement] the moment an ad is
      * bound to [container] - use this for slots that get shown again and again (e.g. a screen the
-     * user revisits, or [BannerAds]' collapse banner shared across the whole app) so a fresh ad is
-     * ready by the time this one is dismissed. Leave false for one-shot placements (e.g. onboarding
+     * user revisits) so a fresh ad is ready by the time this one is dismissed. Leave false for one-shot placements (e.g. onboarding
      * pages shown exactly once) where preloading a replacement would never get used.
      */
     fun subscribe(
@@ -152,39 +164,27 @@ object NativeAds {
             container.visibility = View.GONE
             return AdHandle {}
         }
-        val slot = slotFor(placement)
-
-        var subscribed = true
         var currentView: NativeAdView? = null
         var attachedAd: NativeAd? = null
         var shimmer: AdNativeShimmerBinding? = showShimmer(activity, container)
 
-        val onReady: (NativeAd) -> Unit = { ad ->
-            activity.runOnUiThread {
-                if (!subscribed) {
-                    slot.cache(ad)
-                    return@runOnUiThread
-                }
-                shimmer?.let { it.root.stopShimmer(); container.removeView(it.root) }
-                shimmer = null
-                val view = render(activity, ad)
-                container.removeAllViews()
-                view.alpha = 0f
-                container.addView(view)
-                view.animate().alpha(1f).setDuration(FADE_IN_MS).start()
-                currentView = view
-                attachedAd = ad
-                // This ad is now in use - kick off a real load for the next one right away so a
-                // replacement is warm by the time this one is dismissed.
-                if (preloadOnShow) preload(placement)
-            }
+        val request = request(activity, placement) { ad ->
+            shimmer?.let { it.root.stopShimmer(); container.removeView(it.root) }
+            shimmer = null
+            val view = render(activity, ad)
+            container.removeAllViews()
+            view.alpha = 0f
+            container.addView(view)
+            view.animate().alpha(1f).setDuration(FADE_IN_MS).start()
+            currentView = view
+            attachedAd = ad
+            // This ad is now in use - kick off a real load for the next one right away so a
+            // replacement is warm by the time this one is dismissed.
+            if (preloadOnShow) preload(placement)
         }
 
-        slot.take(TTL_MS)?.let(onReady) ?: startLoad(placement, slot, onReady)
-
         return AdHandle {
-            subscribed = false
-            slot.cancelLoad(onReady)
+            request.destroy()
             activity.runOnUiThread {
                 currentView?.destroy()
                 currentView = null
@@ -199,6 +199,34 @@ object NativeAds {
         }
     }
 
+    /**
+     * Delivers one ad for [placement] to [onReady] on the UI thread - the cached one if still
+     * fresh, otherwise a newly loaded one - or tells [onFailed] if the waterfall comes up empty.
+     * The delivered ad belongs to the caller, who must destroy it. Destroying the returned handle
+     * stops delivery; an ad that still arrives afterwards is cached for the next taker instead.
+     * The building block under [subscribe], for callers that manage their own views.
+     */
+    internal fun request(
+        activity: Activity,
+        placement: NativePlacement,
+        onFailed: (String) -> Unit = {},
+        onReady: (NativeAd) -> Unit,
+    ): AdHandle {
+        val slot = slotFor(placement)
+        var active = true
+        val deliver: (NativeAd) -> Unit = { ad ->
+            activity.runOnUiThread { if (active) onReady(ad) else slot.cache(ad) }
+        }
+        val fail: (String) -> Unit = { error ->
+            activity.runOnUiThread { if (active) onFailed(error) }
+        }
+        slot.take(TTL_MS)?.let(deliver) ?: startLoad(placement, slot, deliver, fail)
+        return AdHandle {
+            active = false
+            slot.cancelLoad(deliver)
+        }
+    }
+
     /** Shows a shimmering skeleton in [container] so the ad slot never pops in from empty. */
     private fun showShimmer(activity: Activity, container: FrameLayout): AdNativeShimmerBinding {
         val binding = AdNativeShimmerBinding.inflate(LayoutInflater.from(activity))
@@ -208,8 +236,13 @@ object NativeAds {
         return binding
     }
 
-    private fun startLoad(placement: NativePlacement, slot: NativeAdSlot, onReady: ((NativeAd) -> Unit)?) {
-        if (!slot.requestLoad(onReady)) return
+    private fun startLoad(
+        placement: NativePlacement,
+        slot: NativeAdSlot,
+        onReady: ((NativeAd) -> Unit)?,
+        onFailed: ((String) -> Unit)?,
+    ) {
+        if (!slot.requestLoad(onReady, onFailed)) return
         WaterfallLoader<NativeAd>(Ads.ids.native[placement].orEmpty()).load(
             attempt = { id, loaded, failed ->
                 val request = NativeAdRequest.Builder(id, listOf(NativeAd.NativeAdType.NATIVE)).build()
@@ -224,7 +257,7 @@ object NativeAds {
                 })
             },
             onLoaded = { ad, _ -> slot.onAdLoaded(ad)?.invoke(ad) },
-            onFailed = { slot.onLoadFailed() },
+            onFailed = { error -> slot.onLoadFailed()?.invoke(error) },
         )
     }
 
