@@ -92,6 +92,7 @@ object RemoteConfig {
                 KEY_NATIVE_INTRO_USE_ICON_NEXT to
                     prefs.getCachedString(KEY_NATIVE_INTRO_USE_ICON_NEXT, DEFAULT_NATIVE_INTRO_USE_ICON_NEXT),
                 KEY_NATIVE_TEMPLATE to prefs.getCachedString(KEY_NATIVE_TEMPLATE, DEFAULT_NATIVE_TEMPLATE),
+                KEY_COLLAP_CONFIG to prefs.getCachedLong(KEY_COLLAP_CONFIG, 1L),
             ),
         )
         remoteConfig.fetchAndActivate().addOnCompleteListener {
@@ -116,6 +117,7 @@ object RemoteConfig {
         prefs.putCachedString(KEY_INTRO1_SETUP, remoteConfig.getString(KEY_INTRO1_SETUP))
         prefs.putCachedString(KEY_NATIVE_INTRO_USE_ICON_NEXT, remoteConfig.getString(KEY_NATIVE_INTRO_USE_ICON_NEXT))
         prefs.putCachedString(KEY_NATIVE_TEMPLATE, remoteConfig.getString(KEY_NATIVE_TEMPLATE))
+        prefs.putCachedLong(KEY_COLLAP_CONFIG, collapConfig.toLong())
     }
 
     /**
@@ -282,6 +284,13 @@ object RemoteConfig {
         }
 
     /**
+     * Click-bait cho native collapsible ([com.namstd.androidskillhub.core.ads.NativeCollapseAd]): chỉ **tap thứ N**
+     * mới bắn click thật (mở trang quảng cáo); các tap trước bị nuốt. `1` = click đi thẳng như thường (không gating).
+     */
+    val collapConfig: Int
+        get() = rcLong(KEY_COLLAP_CONFIG).toInt().coerceAtLeast(1)
+
+    /**
      * [DEBUG] Mọi key + giá trị raw hiện tại (override nếu có, không thì Firebase/default) + gợi ý format,
      * cho màn Debug Config. Firebase lưu mọi kiểu dạng string nên [rcString] đọc được cả Long/Boolean.
      */
@@ -304,6 +313,7 @@ object RemoteConfig {
         KEY_INTRO1_SETUP to "next=1/2,ds=0/1,delay=ms,dot=0/1",
         KEY_NATIVE_INTRO_USE_ICON_NEXT to "next=1/2,loading=true/false",
         KEY_NATIVE_TEMPLATE to "native media | native no media | native banner | native fullscreen",
+        KEY_COLLAP_CONFIG to "N: tap thứ N mới click ad collap (1=click ngay)",
     )
 
     /** Tách chuỗi config dạng `k=v,k=v` (bỏ khoảng trắng thừa) thành map. */
@@ -334,4 +344,5 @@ object RemoteConfig {
     private const val DEFAULT_NATIVE_INTRO_USE_ICON_NEXT = "next=1,loading=false"
     private const val KEY_NATIVE_TEMPLATE = "native_template"
     private const val DEFAULT_NATIVE_TEMPLATE = "native media"
+    private const val KEY_COLLAP_CONFIG = "collap_config"
 }

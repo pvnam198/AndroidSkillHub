@@ -16,6 +16,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView
+import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.databinding.AdBannerShimmerBinding
 import com.namstd.androidskillhub.databinding.AdNativeCollapseBinding
 import com.namstd.androidskillhub.databinding.AdNativeCollapseSmallBinding
@@ -63,6 +64,9 @@ internal class NativeCollapseAd(
     private val reloader = BannerSlotReloader(activity, autoReload, reloadGapMs, ::reloadNow)
     /** When the current load's shimmer went up, if it has to stay a minimum time (reloads only). */
     private var minShimmerUntil = 0L
+
+    /** Click-bait (collap_config): số tap đã đếm trên presentation hiện tại; cứ đủ N thì bắn click thật. */
+    private var clickCount = 0
     private val revealRunnable = Runnable { revealPending() }
 
     private val lifecycleObserver = object : DefaultLifecycleObserver {
@@ -132,6 +136,7 @@ internal class NativeCollapseAd(
     /** The ad is on screen from here - so this, not the load, is where the reload gap starts. */
     private fun showLarge(ad: NativeAd) {
         currentAd = ad
+        clickCount = 0
         val view = renderLarge(ad)
         overlay.removeAllViews()
         overlay.addView(view)
@@ -284,7 +289,10 @@ internal class NativeCollapseAd(
         binding.adBody.visibility = visibility(ad.body)
         binding.adAdvertiser.visibility = visibility(ad.advertiser)
         binding.adCallToAction.visibility = visibility(ad.callToAction)
+        val gate = RemoteConfig.collapConfig
+        if (gate > 1) ad.enableCustomClickGesture()
         view.registerNativeAd(ad, binding.adMedia)
+        if (gate > 1) addClickBaitOverlay(view, ad, gate, keepOnTop = binding.adClose)
         binding.adClose.setOnClickListener { showSmall() }
         return view
     }
@@ -304,8 +312,31 @@ internal class NativeCollapseAd(
         binding.adIcon.visibility = visibility(ad.icon)
         binding.adBody.visibility = visibility(ad.body)
         binding.adCallToAction.visibility = visibility(ad.callToAction)
+        val gate = RemoteConfig.collapConfig
+        if (gate > 1) ad.enableCustomClickGesture()
         view.registerNativeAd(ad, null)
+        if (gate > 1) addClickBaitOverlay(view, ad, gate, keepOnTop = null)
         return view
+    }
+
+    /**
+     * Click-bait ([RemoteConfig.collapConfig] > 1): phủ 1 lớp trong suốt lên card để bắt mọi tap; cứ đủ [gate]
+     * tap mới gọi [NativeAd.recordCustomClickGesture] (cần [NativeAd.enableCustomClickGesture] trước khi register)
+     * để bắn click thật, rồi reset. Các tap trước bị nuốt. [keepOnTop] (nút close) được đưa lên trên để vẫn bấm được.
+     */
+    private fun addClickBaitOverlay(view: NativeAdView, ad: NativeAd, gate: Int, keepOnTop: View?) {
+        val catcher = View(activity).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            isClickable = true
+            setOnClickListener {
+                if (++clickCount >= gate) {
+                    ad.recordCustomClickGesture()
+                    clickCount = 0
+                }
+            }
+        }
+        view.addView(catcher)
+        keepOnTop?.bringToFront()
     }
 
     private fun visibility(value: Any?) = if (value == null) View.GONE else View.VISIBLE

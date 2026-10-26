@@ -47,6 +47,7 @@ Key `enable` là công tắc xương sống: mỗi vị trí 1 số = bật/tắ
 | Key | Kiểu | Fallback | Ý nghĩa |
 |---|---|---|---|
 | `native_template` | String | `native media` | Layout của native card render qua `NativeAds.renderDefaultCard`: `native media` (có ảnh), `native no media` (chỉ chữ), `native banner` (dải nhỏ), `native fullscreen` (card lớn). Áp cho các placement render mặc định (Language, Onboarding, Welcome back, banner-native). **Không** đổi feed / post-interstitial / native collapsible (layout cố định riêng). Parse ra `RemoteConfig.nativeTemplate` (`NativeTemplate`). |
+| `collap_config` | Long → Int | `1` | Click-bait native collapsible (`NativeCollapseAd`): chỉ **tap thứ N** mới bắn click thật (mở trang QC); tap trước bị nuốt. `1` = click đi thẳng như thường. Dùng SDK `enableCustomClickGesture`/`recordCustomClickGesture`. Clamp tối thiểu 1. |
 
 ### Quảng cáo — banner slot auto reload
 
@@ -108,7 +109,7 @@ Spec gốc (file `Remote Config.pdf`) mô tả bộ key legacy khác tên. App *
 - [x] `native_intro_use_icon_next` — nút Next/icon X cho native fullscreen onboarding (loading gate bằng `wait_time`) *(26/10/2026)*
 - [x] `enable` — bật/tắt + chọn loại QC theo vị trí (gồm AOA splash, native-inter, native-banner, welcome back) *(26/10/2026)*
 - [x] `native_template` — chọn layout native động (media/no media/banner/fullscreen) *(26/10/2026)*
-- [ ] `collap_config` — click-bait native collap
+- [x] `collap_config` — click-bait native collap (tap thứ N mới click) *(26/10/2026)*
 - [ ] Tiering ID `highfloor / medium / all_price`
 
 > Khi làm thêm key mới, cập nhật bảng "Danh sách key" và tick mục tương ứng ở đây.
