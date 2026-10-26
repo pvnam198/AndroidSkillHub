@@ -2,16 +2,27 @@ package com.namstd.androidskillhub.feature.onboarding
 
 import android.content.Intent
 import android.view.LayoutInflater
+import android.view.View
+import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.tabs.TabLayoutMediator
 import com.namstd.androidskillhub.R
 import com.namstd.androidskillhub.core.ads.InterstitialPlacement
+import com.namstd.androidskillhub.core.config.Intro1Setup
 import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.ui.base.BaseActivity
 import com.namstd.androidskillhub.databinding.ActivityOnboardingBinding
 import com.namstd.androidskillhub.feature.main.MainActivity
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class OnboardingActivity : BaseActivity<ActivityOnboardingBinding>() {
+    private lateinit var setup: Intro1Setup
+    private lateinit var nextControl: View
+    private var dotsMediator: TabLayoutMediator? = null
+
     override fun inflateBinding(inflater: LayoutInflater): ActivityOnboardingBinding =
         ActivityOnboardingBinding.inflate(inflater)
 
@@ -22,6 +33,35 @@ class OnboardingActivity : BaseActivity<ActivityOnboardingBinding>() {
                 if (position == AD_PAGE) OnboardingAdFragment() else OnboardingPageFragment.newInstance(contentIndex(position))
         }
         binding.onboardingPager.isUserInputEnabled = RemoteConfig.introSwipe
+
+        setup = RemoteConfig.intro1Setup
+
+        // next: 1 = nút chữ, 2 = icon. Ẩn control không dùng.
+        val useIcon = setup.nextStyle == 2
+        nextControl = if (useIcon) binding.nextIcon else binding.nextButton
+        binding.nextButton.isVisible = !useIcon
+        binding.nextIcon.isVisible = useIcon
+        // Có delay thì ẩn trước, onPageSelected sẽ hiện lại sau delay.
+        if (setup.delayMs > 0L) nextControl.isVisible = false
+
+        // dot: 1 = chấm tròn (TabLayout), 0 = text "x/n".
+        if (setup.showDots) {
+            binding.pageIndicator.isVisible = false
+            binding.pageDots.isVisible = true
+            dotsMediator = TabLayoutMediator(binding.pageDots, binding.onboardingPager) { _, _ -> }
+                .also { it.attach() }
+        } else {
+            binding.pageDots.isVisible = false
+            binding.pageIndicator.isVisible = true
+        }
+
+        // ds: 0 = indicator xuống dưới nút Next (mặc định 1 = phía trên).
+        if (setup.indicatorPosition == 0) {
+            val root = binding.root
+            root.removeView(binding.indicatorContainer)
+            root.addView(binding.indicatorContainer, root.indexOfChild(binding.nextContainer) + 1)
+        }
+
         loadBanner(binding.bannerContainer)
     }
 
@@ -30,10 +70,23 @@ class OnboardingActivity : BaseActivity<ActivityOnboardingBinding>() {
             override fun onPageSelected(position: Int) {
                 binding.pageIndicator.text = "${position + 1} / $PAGE_COUNT"
                 binding.nextButton.setText(if (position == PAGE_COUNT - 1) R.string.get_started else R.string.next)
+                revealNextAfterDelay()
             }
         })
-        binding.nextButton.setOnClickListener {
+        val advance = {
             if (binding.onboardingPager.currentItem < PAGE_COUNT - 1) binding.onboardingPager.currentItem += 1 else finishSetup()
+        }
+        binding.nextButton.setOnClickListener { advance() }
+        binding.nextIcon.setOnClickListener { advance() }
+    }
+
+    /** Hiện nút Next sau [Intro1Setup.delayMs] (ẩn trước nếu có delay). */
+    private fun revealNextAfterDelay() {
+        if (setup.delayMs <= 0L) { nextControl.isVisible = true; return }
+        nextControl.isVisible = false
+        lifecycleScope.launch {
+            delay(setup.delayMs)
+            nextControl.isVisible = true
         }
     }
 
@@ -51,6 +104,8 @@ class OnboardingActivity : BaseActivity<ActivityOnboardingBinding>() {
     }
 
     override fun releaseResources() {
+        dotsMediator?.detach()
+        dotsMediator = null
         binding.onboardingPager.adapter = null
     }
 

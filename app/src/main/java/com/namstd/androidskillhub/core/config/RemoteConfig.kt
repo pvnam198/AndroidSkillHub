@@ -13,6 +13,15 @@ import kotlinx.coroutines.flow.asStateFlow
 /** Giá trị đã parse của key `inter_delay_time`: gap giữa các interstitial (ms) + các loại inter được miễn gap. */
 data class InterDelayConfig(val gapMs: Long, val ignore: Set<String>)
 
+/** Giá trị đã parse của key `language_setup` (`next=1,loading=true`). nextStyle: 1=nút chữ, 2=icon. */
+data class LanguageSetup(val nextStyle: Int, val loading: Boolean)
+
+/**
+ * Giá trị đã parse của key `intro1_setup` (`next=1,ds=1,delay=0,dot=1`).
+ * nextStyle: 1=nút chữ, 2=icon. indicatorPosition: 1=indicator trên nút Next, 0=dưới. delayMs: chờ trước khi hiện Next. showDots: hiện chấm tròn.
+ */
+data class Intro1Setup(val nextStyle: Int, val indicatorPosition: Int, val delayMs: Long, val showDots: Boolean)
+
 /**
  * Các feature flag điều khiển từ xa qua Firebase Remote Config.
  *
@@ -57,6 +66,8 @@ object RemoteConfig {
                 KEY_INTRO_SWIPE to prefs.getCachedBoolean(KEY_INTRO_SWIPE, true),
                 KEY_LANGUAGE_DELAY_MILLIS to prefs.getCachedLong(KEY_LANGUAGE_DELAY_MILLIS, 800L),
                 KEY_STEP_COUNT to prefs.getCachedLong(KEY_STEP_COUNT, 1L),
+                KEY_LANGUAGE_SETUP to prefs.getCachedString(KEY_LANGUAGE_SETUP, DEFAULT_LANGUAGE_SETUP),
+                KEY_INTRO1_SETUP to prefs.getCachedString(KEY_INTRO1_SETUP, DEFAULT_INTRO1_SETUP),
             ),
         )
         remoteConfig.fetchAndActivate().addOnCompleteListener {
@@ -78,6 +89,8 @@ object RemoteConfig {
         prefs.putCachedBoolean(KEY_INTRO_SWIPE, introSwipe)
         prefs.putCachedLong(KEY_LANGUAGE_DELAY_MILLIS, languageDelayMillis)
         prefs.putCachedLong(KEY_STEP_COUNT, stepCount.toLong())
+        prefs.putCachedString(KEY_LANGUAGE_SETUP, remoteConfig.getString(KEY_LANGUAGE_SETUP))
+        prefs.putCachedString(KEY_INTRO1_SETUP, remoteConfig.getString(KEY_INTRO1_SETUP))
     }
 
     /** Khi true, [com.namstd.androidskillhub.core.ui.base.BaseActivity.showInterstitial] sẽ chạy interstitial + break 2 native ad sau đó. */
@@ -181,6 +194,43 @@ object RemoteConfig {
     val introSwipe: Boolean
         get() = remoteConfig.getBoolean(KEY_INTRO_SWIPE)
 
+    /**
+     * Cấu hình nút Next màn chọn ngôn ngữ (key `language_setup`, dạng `next=1,loading=true`):
+     * `next` = kiểu nút (1=nút chữ, 2=icon), `loading` = có hiện vòng loading trong lúc chờ
+     * [languageDelayMillis] trước khi hiện Next hay không.
+     */
+    val languageSetup: LanguageSetup
+        get() {
+            val m = parseKeyValues(remoteConfig.getString(KEY_LANGUAGE_SETUP))
+            return LanguageSetup(
+                nextStyle = m["next"]?.toIntOrNull() ?: 1,
+                loading = m["loading"]?.toBoolean() ?: false,
+            )
+        }
+
+    /**
+     * Cấu hình màn Onboarding (key `intro1_setup`, dạng `next=1,ds=1,delay=0,dot=1`):
+     * `next` = kiểu nút (1=nút chữ, 2=icon), `ds` = vị trí indicator (1=trên nút Next, 0=dưới),
+     * `delay` = số ms chờ trước khi hiện nút Next mỗi trang, `dot` = 1 hiện chấm tròn / 0 hiện text "x/n".
+     */
+    val intro1Setup: Intro1Setup
+        get() {
+            val m = parseKeyValues(remoteConfig.getString(KEY_INTRO1_SETUP))
+            return Intro1Setup(
+                nextStyle = m["next"]?.toIntOrNull() ?: 1,
+                indicatorPosition = m["ds"]?.toIntOrNull() ?: 1,
+                delayMs = m["delay"]?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L,
+                showDots = m["dot"]?.toIntOrNull() == 1,
+            )
+        }
+
+    /** Tách chuỗi config dạng `k=v,k=v` (bỏ khoảng trắng thừa) thành map. */
+    private fun parseKeyValues(raw: String): Map<String, String> =
+        raw.split(",").mapNotNull { part ->
+            val pair = part.split("=", limit = 2)
+            if (pair.size == 2) pair[0].trim() to pair[1].trim() else null
+        }.toMap()
+
     private const val KEY_USE_CUSTOM_INTERSTITIAL = "use_custom_interstitial"
     private const val KEY_USE_NATIVE_COLLAPSIBLE = "use_native_collapsible"
     private const val KEY_BANNER_SLOT_AUTO_RELOAD = "banner_slot_auto_reload"
@@ -194,4 +244,8 @@ object RemoteConfig {
     private const val KEY_INTRO_SWIPE = "intro_swipe"
     private const val KEY_LANGUAGE_DELAY_MILLIS = "language_delay_millis"
     private const val KEY_STEP_COUNT = "step_count"
+    private const val KEY_LANGUAGE_SETUP = "language_setup"
+    private const val DEFAULT_LANGUAGE_SETUP = "next=1,loading=false"
+    private const val KEY_INTRO1_SETUP = "intro1_setup"
+    private const val DEFAULT_INTRO1_SETUP = "next=1,ds=1,delay=0,dot=0"
 }

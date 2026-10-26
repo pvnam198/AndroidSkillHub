@@ -76,6 +76,8 @@ Dùng bởi `PostInterstitialNativeAdDialogFragment` (flow 2 stage).
 |---|---|---|---|
 | `intro_swipe` | Boolean | `true` | Cho phép vuốt (swipe) ở màn Onboarding (`OnboardingActivity`, `ViewPager2.isUserInputEnabled`). `true` = vuốt được (mặc định); `false` = chỉ chuyển trang bằng nút Next. |
 | `language_delay_millis` | Long (**ms**) | `800` | Thời gian chờ trước khi nút xác nhận (`apply_button`) ở màn chọn ngôn ngữ (`LanguageActivity`) hiện ra. `0` = hiện ngay. **Đơn vị đã là mili-giây — getter KHÔNG nhân ×1000** (khác các key gap tính bằng giây). |
+| `language_setup` | String | `next=1,loading=false` | Nút Next màn Language. Dạng `next=1,loading=true`: `next` = kiểu nút (`1` nút chữ, `2` icon mũi tên), `loading` = có hiện vòng loading trong lúc chờ `language_delay_millis` không. Parse ra `RemoteConfig.languageSetup` (`LanguageSetup`). |
+| `intro1_setup` | String | `next=1,ds=1,delay=0,dot=0` | UI màn Onboarding. Dạng `next=1,ds=1,delay=0,dot=1`: `next` = kiểu nút (`1` chữ, `2` icon), `ds` = vị trí indicator (`1` trên nút Next, `0` dưới), `delay` = **ms** chờ trước khi hiện nút Next mỗi trang, `dot` = `1` hiện chấm tròn (TabLayout) / `0` hiện text "x/n". Parse ra `RemoteConfig.intro1Setup` (`Intro1Setup`). |
 
 ---
 
@@ -88,7 +90,9 @@ Spec gốc (file `Remote Config.pdf`) mô tả bộ key legacy khác tên. App *
 - [x] `language_delay_millis` — delay hiện nút xác nhận màn Language *(26/10/2026)*
 - [x] `step_count` — inter chỉ hiện ở lần chia hết cho N (bộ đếm persist) *(26/10/2026)*
 - [x] `inter_delay_time` (time + `ignore`) — gap giữa inter + miễn gap cho một số loại inter (thay `inter_inter_gap_seconds`) *(26/10/2026)*
-- [ ] `language_setup`, `native_intro_use_icon_next`, `intro1_setup` — config UI Language/Onboarding
+- [x] `language_setup` — kiểu nút Next + loading màn Language *(26/10/2026)*
+- [x] `intro1_setup` — kiểu nút Next + vị trí indicator + delay + chấm tròn màn Onboarding *(26/10/2026)*
+- [ ] `native_intro_use_icon_next` — nút Next/icon X cho native fullscreen onboarding
 - [ ] `enable` — bật/tắt + chọn loại QC theo vị trí
 - [ ] `native templete` — chọn layout native động
 - [ ] `collap_config` — click-bait native collap

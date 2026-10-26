@@ -41,18 +41,25 @@ class LanguageActivity : BaseActivity<ActivityLanguageBinding>() {
         binding.languageList.adapter =
             LanguageAdapter(AppLanguage.entries, selectedLanguage) { selectedLanguage = it }
         loadNative(binding.nativeContainer, NativePlacement.LANGUAGE)
+
+        val setup = RemoteConfig.languageSetup
+        val nextControl = if (setup.nextStyle == 2) binding.applyIcon else binding.applyButton
         lifecycleScope.launch {
+            if (setup.loading) binding.applyLoading.isVisible = true
             delay(RemoteConfig.languageDelayMillis)
-            binding.applyButton.isVisible = true
+            binding.applyLoading.isVisible = false
+            nextControl.isVisible = true
         }
     }
 
     override fun initListeners() {
-        binding.applyButton.setOnClickListener {
+        val apply = {
             prefs.selectedLanguage = selectedLanguage.code
             prefs.applyLocale(selectedLanguage.code)
             showInterstitial(InterstitialPlacement.LANGUAGE) { if (!isFinishing) goToNext() }
         }
+        binding.applyButton.setOnClickListener { apply() }
+        binding.applyIcon.setOnClickListener { apply() }
     }
 
     private fun goToNext() {
