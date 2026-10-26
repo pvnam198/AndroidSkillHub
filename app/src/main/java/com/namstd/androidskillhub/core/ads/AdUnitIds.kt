@@ -1,5 +1,7 @@
 package com.namstd.androidskillhub.core.ads
 
+import com.namstd.androidskillhub.core.config.RemoteConfig
+
 /**
  * Ordered fallback lists. These defaults are Google's Android test ad units.
  * Replace every list, along with the manifest app ID, before publishing.
@@ -14,6 +16,23 @@ data class AdUnitIds(
     val appOpen: List<String> = listOf(TEST_APP_OPEN),
 ) {
     companion object {
+        /**
+         * Dựng [AdUnitIds] từ các key tiering của [RemoteConfig] (highfloor → medium → all_price).
+         * Format nào chưa set (list rỗng) thì giữ test id mặc định. `id_native` áp chung cho mọi placement.
+         * Rewarded / RewardedInterstitial (dormant) luôn dùng test id.
+         */
+        fun fromConfig(): AdUnitIds {
+            val defaults = AdUnitIds()
+            val native = RemoteConfig.idNative.ifEmpty { null }
+            return AdUnitIds(
+                banner = RemoteConfig.idBanner.ifEmpty { defaults.banner },
+                bannerCollapsible = RemoteConfig.idBannerCollapsible.ifEmpty { defaults.bannerCollapsible },
+                interstitial = RemoteConfig.idInterstitial.ifEmpty { defaults.interstitial },
+                native = if (native != null) NativePlacement.entries.associateWith { native } else defaults.native,
+                appOpen = RemoteConfig.idAppOpen.ifEmpty { defaults.appOpen },
+            )
+        }
+
         const val TEST_BANNER = "ca-app-pub-3940256099942544/6300978111"
         const val TEST_BANNER_COLLAPSIBLE = "ca-app-pub-3940256099942544/2014213617"
         const val TEST_INTERSTITIAL = "ca-app-pub-3940256099942544/1033173712"

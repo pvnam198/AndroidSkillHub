@@ -74,6 +74,20 @@ Gate ở `BaseActivity.showInterstitial`. Khác với các key gap ở trên (ch
 |---|---|---|---|
 | `step_count` | Long → Int | `1` | Chỉ hiện interstitial ở lần yêu cầu **chia hết cho** giá trị này (`1` = mọi lần; `2` = cứ 2 lần/1 lần...). Bộ đếm **lưu qua các lần mở app** (`AppPreferences.interstitialStepCounter`), nên với trigger hiện tại (chỉ ở Splash) `step_count=2` nghĩa là "cứ 2 lần mở app hiện 1 lần". Clamp tối thiểu 1. |
 
+### Quảng cáo — ID ads theo tầng (tiering)
+
+Mỗi format có 3 tầng ID ưu tiên: **highfloor → medium → all_price**; set 1 trong 3 hoặc cả 3. Dựng thành `AdUnitIds` qua `AdUnitIds.fromConfig()`, nạp vào `Ads.initialize` ở Splash; waterfall (`WaterfallLoader`) thử lần lượt theo đúng thứ tự. Value dạng `highfloor=id1|id2,medium=id3,all_price=id4` (nhiều id/tầng ngăn bằng `|`). **Rỗng → test id mặc định.** Rewarded/RewardedInter (dormant) luôn test id.
+
+| Key | Kiểu | Fallback | Ý nghĩa |
+|---|---|---|---|
+| `id_banner` | String (tầng) | test id | ID banner thường |
+| `id_banner_collapsible` | String (tầng) | test id | ID banner collapsible |
+| `id_interstitial` | String (tầng) | test id | ID interstitial |
+| `id_native` | String (tầng) | test id | ID native — áp **chung mọi placement** |
+| `id_app_open` | String (tầng) | test id | ID App Open |
+
+> **Lưu ý:** ID chốt 1 lần tại Splash (`Ads.initialize`). Lần cài đầu (chưa có cache) dùng test id; từ lần mở sau mới áp ID thật. Debug override cũng ăn ở lần mở kế.
+
 ### Quảng cáo — break native sau interstitial
 
 Dùng bởi `PostInterstitialNativeAdDialogFragment` (flow 2 stage).
@@ -110,6 +124,6 @@ Spec gốc (file `Remote Config.pdf`) mô tả bộ key legacy khác tên. App *
 - [x] `enable` — bật/tắt + chọn loại QC theo vị trí (gồm AOA splash, native-inter, native-banner, welcome back) *(26/10/2026)*
 - [x] `native_template` — chọn layout native động (media/no media/banner/fullscreen) *(26/10/2026)*
 - [x] `collap_config` — click-bait native collap (tap thứ N mới click) *(26/10/2026)*
-- [ ] Tiering ID `highfloor / medium / all_price`
+- [x] Tiering ID `highfloor / medium / all_price` (id_banner/_collapsible/_interstitial/_native/_app_open) *(26/10/2026)*
 
 > Khi làm thêm key mới, cập nhật bảng "Danh sách key" và tick mục tương ứng ở đây.

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.view.LayoutInflater
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.namstd.androidskillhub.core.ads.AdUnitIds
 import com.namstd.androidskillhub.core.ads.Ads
 import com.namstd.androidskillhub.core.ads.AppOpenAds
 import com.namstd.androidskillhub.core.ads.FullScreenAdPlan
@@ -47,7 +48,7 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
             return
         }
 
-        Ads.initialize(this) { consentGranted ->
+        Ads.initialize(this, AdUnitIds.fromConfig()) { consentGranted ->
             runOnUiThread {
                 if (consentGranted) {
                     loadBanner(binding.bannerContainer)

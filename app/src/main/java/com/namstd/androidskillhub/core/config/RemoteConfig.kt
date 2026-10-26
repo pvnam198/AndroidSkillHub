@@ -93,6 +93,11 @@ object RemoteConfig {
                     prefs.getCachedString(KEY_NATIVE_INTRO_USE_ICON_NEXT, DEFAULT_NATIVE_INTRO_USE_ICON_NEXT),
                 KEY_NATIVE_TEMPLATE to prefs.getCachedString(KEY_NATIVE_TEMPLATE, DEFAULT_NATIVE_TEMPLATE),
                 KEY_COLLAP_CONFIG to prefs.getCachedLong(KEY_COLLAP_CONFIG, 1L),
+                KEY_ID_BANNER to prefs.getCachedString(KEY_ID_BANNER, ""),
+                KEY_ID_BANNER_COLLAPSIBLE to prefs.getCachedString(KEY_ID_BANNER_COLLAPSIBLE, ""),
+                KEY_ID_INTERSTITIAL to prefs.getCachedString(KEY_ID_INTERSTITIAL, ""),
+                KEY_ID_NATIVE to prefs.getCachedString(KEY_ID_NATIVE, ""),
+                KEY_ID_APP_OPEN to prefs.getCachedString(KEY_ID_APP_OPEN, ""),
             ),
         )
         remoteConfig.fetchAndActivate().addOnCompleteListener {
@@ -118,6 +123,11 @@ object RemoteConfig {
         prefs.putCachedString(KEY_NATIVE_INTRO_USE_ICON_NEXT, remoteConfig.getString(KEY_NATIVE_INTRO_USE_ICON_NEXT))
         prefs.putCachedString(KEY_NATIVE_TEMPLATE, remoteConfig.getString(KEY_NATIVE_TEMPLATE))
         prefs.putCachedLong(KEY_COLLAP_CONFIG, collapConfig.toLong())
+        prefs.putCachedString(KEY_ID_BANNER, remoteConfig.getString(KEY_ID_BANNER))
+        prefs.putCachedString(KEY_ID_BANNER_COLLAPSIBLE, remoteConfig.getString(KEY_ID_BANNER_COLLAPSIBLE))
+        prefs.putCachedString(KEY_ID_INTERSTITIAL, remoteConfig.getString(KEY_ID_INTERSTITIAL))
+        prefs.putCachedString(KEY_ID_NATIVE, remoteConfig.getString(KEY_ID_NATIVE))
+        prefs.putCachedString(KEY_ID_APP_OPEN, remoteConfig.getString(KEY_ID_APP_OPEN))
     }
 
     /**
@@ -290,6 +300,24 @@ object RemoteConfig {
     val collapConfig: Int
         get() = rcLong(KEY_COLLAP_CONFIG).toInt().coerceAtLeast(1)
 
+    /** Danh sách ID theo tầng cho waterfall (thứ tự highfloor → medium → all_price). Rỗng = để caller fallback test id. */
+    val idBanner: List<String> get() = tieredIds(KEY_ID_BANNER)
+    val idBannerCollapsible: List<String> get() = tieredIds(KEY_ID_BANNER_COLLAPSIBLE)
+    val idInterstitial: List<String> get() = tieredIds(KEY_ID_INTERSTITIAL)
+    val idNative: List<String> get() = tieredIds(KEY_ID_NATIVE)
+    val idAppOpen: List<String> get() = tieredIds(KEY_ID_APP_OPEN)
+
+    /**
+     * Parse chuỗi ID theo tầng `highfloor=id1|id2,medium=id3,all_price=id4` thành 1 list đã xếp ưu tiên
+     * highfloor → medium → all_price (nhiều id/tầng ngăn bằng `|`; tầng thiếu thì bỏ qua). Rỗng nếu chưa set.
+     */
+    private fun tieredIds(key: String): List<String> {
+        val m = parseKeyValues(rcString(key))
+        return listOf("highfloor", "medium", "all_price").flatMap { tier ->
+            m[tier]?.split("|")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+        }
+    }
+
     /**
      * [DEBUG] Mọi key + giá trị raw hiện tại (override nếu có, không thì Firebase/default) + gợi ý format,
      * cho màn Debug Config. Firebase lưu mọi kiểu dạng string nên [rcString] đọc được cả Long/Boolean.
@@ -314,6 +342,11 @@ object RemoteConfig {
         KEY_NATIVE_INTRO_USE_ICON_NEXT to "next=1/2,loading=true/false",
         KEY_NATIVE_TEMPLATE to "native media | native no media | native banner | native fullscreen",
         KEY_COLLAP_CONFIG to "N: tap thứ N mới click ad collap (1=click ngay)",
+        KEY_ID_BANNER to "highfloor=..|..,medium=..,all_price=.. (rỗng=test id)",
+        KEY_ID_BANNER_COLLAPSIBLE to "highfloor=..,medium=..,all_price=.. (rỗng=test id)",
+        KEY_ID_INTERSTITIAL to "highfloor=..,medium=..,all_price=.. (rỗng=test id)",
+        KEY_ID_NATIVE to "highfloor=..,medium=..,all_price=.. (áp mọi native; rỗng=test id)",
+        KEY_ID_APP_OPEN to "highfloor=..,medium=..,all_price=.. (rỗng=test id)",
     )
 
     /** Tách chuỗi config dạng `k=v,k=v` (bỏ khoảng trắng thừa) thành map. */
@@ -345,4 +378,9 @@ object RemoteConfig {
     private const val KEY_NATIVE_TEMPLATE = "native_template"
     private const val DEFAULT_NATIVE_TEMPLATE = "native media"
     private const val KEY_COLLAP_CONFIG = "collap_config"
+    private const val KEY_ID_BANNER = "id_banner"
+    private const val KEY_ID_BANNER_COLLAPSIBLE = "id_banner_collapsible"
+    private const val KEY_ID_INTERSTITIAL = "id_interstitial"
+    private const val KEY_ID_NATIVE = "id_native"
+    private const val KEY_ID_APP_OPEN = "id_app_open"
 }
