@@ -52,6 +52,7 @@ object RemoteConfig {
                 KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT to prefs.getCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT, 2L),
                 KEY_WAIT_TIME to prefs.getCachedLong(KEY_WAIT_TIME, 5L),
                 KEY_INTRO_SWIPE to prefs.getCachedBoolean(KEY_INTRO_SWIPE, true),
+                KEY_LANGUAGE_DELAY_MILLIS to prefs.getCachedLong(KEY_LANGUAGE_DELAY_MILLIS, 800L),
             ),
         )
         remoteConfig.fetchAndActivate().addOnCompleteListener {
@@ -71,6 +72,7 @@ object RemoteConfig {
         prefs.putCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT, postInterstitialNativeAdCount.toLong())
         prefs.putCachedLong(KEY_WAIT_TIME, waitTimeMs / 1000)
         prefs.putCachedBoolean(KEY_INTRO_SWIPE, introSwipe)
+        prefs.putCachedLong(KEY_LANGUAGE_DELAY_MILLIS, languageDelayMillis)
     }
 
     /** Khi true, [com.namstd.androidskillhub.core.ui.base.BaseActivity.showInterstitial] sẽ chạy interstitial + break 2 native ad sau đó. */
@@ -137,6 +139,14 @@ object RemoteConfig {
         get() = remoteConfig.getLong(KEY_WAIT_TIME) * 1000
 
     /**
+     * Thời gian chờ (mili-giây) trước khi nút xác nhận ở màn chọn ngôn ngữ
+     * ([com.namstd.androidskillhub.feature.language.LanguageActivity]) hiện ra. `0` = hiện ngay.
+     * Giá trị config đã tính bằng ms (không nhân thêm).
+     */
+    val languageDelayMillis: Long
+        get() = remoteConfig.getLong(KEY_LANGUAGE_DELAY_MILLIS).coerceAtLeast(0L)
+
+    /**
      * Màn Onboarding ([com.namstd.androidskillhub.feature.onboarding.OnboardingActivity]) có cho phép vuốt
      * (`ViewPager2.isUserInputEnabled`) hay không. `true` (mặc định) = vuốt giữa các trang được;
      * `false` = chỉ chuyển trang bằng nút Next. Fallback mặc định là `true` để giữ đúng hành vi gốc của ViewPager2.
@@ -154,4 +164,5 @@ object RemoteConfig {
     private const val KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT = "post_interstitial_native_ad_count"
     private const val KEY_WAIT_TIME = "wait_time"
     private const val KEY_INTRO_SWIPE = "intro_swipe"
+    private const val KEY_LANGUAGE_DELAY_MILLIS = "language_delay_millis"
 }

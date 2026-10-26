@@ -3,8 +3,11 @@ package com.namstd.androidskillhub.feature.language
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
+import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.namstd.androidskillhub.core.ads.NativeAds
+import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.ads.NativePlacement
 import com.namstd.androidskillhub.core.language.AppLanguage
 import com.namstd.androidskillhub.core.navigation.AppRouter
@@ -13,6 +16,8 @@ import com.namstd.androidskillhub.core.ui.base.BaseActivity
 import com.namstd.androidskillhub.databinding.ActivityLanguageBinding
 import com.namstd.androidskillhub.feature.main.MainActivity
 import com.namstd.androidskillhub.feature.onboarding.OnboardingActivity
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class LanguageActivity : BaseActivity<ActivityLanguageBinding>() {
     private lateinit var selectedLanguage: AppLanguage
@@ -35,6 +40,10 @@ class LanguageActivity : BaseActivity<ActivityLanguageBinding>() {
         binding.languageList.adapter =
             LanguageAdapter(AppLanguage.entries, selectedLanguage) { selectedLanguage = it }
         loadNative(binding.nativeContainer, NativePlacement.LANGUAGE)
+        lifecycleScope.launch {
+            delay(RemoteConfig.languageDelayMillis)
+            binding.applyButton.isVisible = true
+        }
     }
 
     override fun initListeners() {
