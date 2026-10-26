@@ -68,6 +68,8 @@ object RemoteConfig {
                 KEY_STEP_COUNT to prefs.getCachedLong(KEY_STEP_COUNT, 1L),
                 KEY_LANGUAGE_SETUP to prefs.getCachedString(KEY_LANGUAGE_SETUP, DEFAULT_LANGUAGE_SETUP),
                 KEY_INTRO1_SETUP to prefs.getCachedString(KEY_INTRO1_SETUP, DEFAULT_INTRO1_SETUP),
+                KEY_NATIVE_INTRO_USE_ICON_NEXT to
+                    prefs.getCachedString(KEY_NATIVE_INTRO_USE_ICON_NEXT, DEFAULT_NATIVE_INTRO_USE_ICON_NEXT),
             ),
         )
         remoteConfig.fetchAndActivate().addOnCompleteListener {
@@ -91,6 +93,7 @@ object RemoteConfig {
         prefs.putCachedLong(KEY_STEP_COUNT, stepCount.toLong())
         prefs.putCachedString(KEY_LANGUAGE_SETUP, remoteConfig.getString(KEY_LANGUAGE_SETUP))
         prefs.putCachedString(KEY_INTRO1_SETUP, remoteConfig.getString(KEY_INTRO1_SETUP))
+        prefs.putCachedString(KEY_NATIVE_INTRO_USE_ICON_NEXT, remoteConfig.getString(KEY_NATIVE_INTRO_USE_ICON_NEXT))
     }
 
     /** Khi true, [com.namstd.androidskillhub.core.ui.base.BaseActivity.showInterstitial] sẽ chạy interstitial + break 2 native ad sau đó. */
@@ -224,6 +227,20 @@ object RemoteConfig {
             )
         }
 
+    /**
+     * Cấu hình control trang native fullscreen trong Onboarding (key `native_intro_use_icon_next`,
+     * dạng `next=1,loading=true`): `next` = kiểu control (`1` = mũi tên Next, `2` = icon X),
+     * `loading` = có hiện spinner chờ [waitTimeMs] trước khi hiện control hay không. Dùng chung kiểu [LanguageSetup].
+     */
+    val nativeIntroUseIconNext: LanguageSetup
+        get() {
+            val m = parseKeyValues(remoteConfig.getString(KEY_NATIVE_INTRO_USE_ICON_NEXT))
+            return LanguageSetup(
+                nextStyle = m["next"]?.toIntOrNull() ?: 1,
+                loading = m["loading"]?.toBoolean() ?: false,
+            )
+        }
+
     /** Tách chuỗi config dạng `k=v,k=v` (bỏ khoảng trắng thừa) thành map. */
     private fun parseKeyValues(raw: String): Map<String, String> =
         raw.split(",").mapNotNull { part ->
@@ -248,4 +265,6 @@ object RemoteConfig {
     private const val DEFAULT_LANGUAGE_SETUP = "next=1,loading=false"
     private const val KEY_INTRO1_SETUP = "intro1_setup"
     private const val DEFAULT_INTRO1_SETUP = "next=1,ds=1,delay=0,dot=0"
+    private const val KEY_NATIVE_INTRO_USE_ICON_NEXT = "native_intro_use_icon_next"
+    private const val DEFAULT_NATIVE_INTRO_USE_ICON_NEXT = "next=1,loading=false"
 }

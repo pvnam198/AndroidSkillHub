@@ -70,14 +70,17 @@ class OnboardingActivity : BaseActivity<ActivityOnboardingBinding>() {
             override fun onPageSelected(position: Int) {
                 binding.pageIndicator.text = "${position + 1} / $PAGE_COUNT"
                 binding.nextButton.setText(if (position == PAGE_COUNT - 1) R.string.get_started else R.string.next)
-                revealNextAfterDelay()
+                // Trang quảng cáo native fullscreen có control riêng (xem OnboardingAdFragment) → ẩn nút đáy.
+                if (position == AD_PAGE) nextControl.isVisible = false else revealNextAfterDelay()
             }
         })
-        val advance = {
-            if (binding.onboardingPager.currentItem < PAGE_COUNT - 1) binding.onboardingPager.currentItem += 1 else finishSetup()
-        }
-        binding.nextButton.setOnClickListener { advance() }
-        binding.nextIcon.setOnClickListener { advance() }
+        binding.nextButton.setOnClickListener { advanceOnboarding() }
+        binding.nextIcon.setOnClickListener { advanceOnboarding() }
+    }
+
+    /** Sang trang onboarding kế tiếp, hoặc kết thúc setup ở trang cuối. Public để [OnboardingAdFragment] gọi từ control riêng của nó. */
+    fun advanceOnboarding() {
+        if (binding.onboardingPager.currentItem < PAGE_COUNT - 1) binding.onboardingPager.currentItem += 1 else finishSetup()
     }
 
     /** Hiện nút Next sau [Intro1Setup.delayMs] (ẩn trước nếu có delay). */
