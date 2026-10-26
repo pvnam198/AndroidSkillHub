@@ -6,11 +6,14 @@ import android.view.LayoutInflater
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.namstd.androidskillhub.core.ads.Ads
+import com.namstd.androidskillhub.core.ads.AppOpenAds
+import com.namstd.androidskillhub.core.ads.FullScreenAdPlan
 import com.namstd.androidskillhub.core.ads.InterstitialAds
 import com.namstd.androidskillhub.core.ads.InterstitialPlacement
 import com.namstd.androidskillhub.core.ads.InterstitialState
 import com.namstd.androidskillhub.core.ads.NativeAds
 import com.namstd.androidskillhub.core.ads.NativePlacement
+import com.namstd.androidskillhub.core.ads.resolveFullScreenPlan
 import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.ui.base.BaseActivity
 import com.namstd.androidskillhub.databinding.ActivitySplashBinding
@@ -48,9 +51,22 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
             runOnUiThread {
                 if (consentGranted) {
                     loadBanner(binding.bannerContainer)
-                    InterstitialAds.load()
                     NativeAds.preload(NativePlacement.LANGUAGE)
-                    lifecycleScope.launch { waitForAdThenNavigate() }
+                    when (resolveFullScreenPlan(InterstitialPlacement.SPLASH, RemoteConfig.enable)) {
+                        FullScreenAdPlan.APP_OPEN -> {
+                            AppOpenAds.load()
+                            lifecycleScope.launch { waitForAppOpenThenNavigate() }
+                        }
+                        FullScreenAdPlan.OFF -> lifecycleScope.launch {
+                            delay(MIN_DELAY_MS)
+                            waitForRemoteConfig()
+                            navigateToMain()
+                        }
+                        else -> {
+                            InterstitialAds.load()
+                            lifecycleScope.launch { waitForAdThenNavigate() }
+                        }
+                    }
                 } else {
                     // Ads off (Ads.adsEnabled = false) or consent denied: no ads to wait for, but the
                     // splash must still move on - otherwise the user is stuck here for good.
@@ -74,6 +90,18 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
         }
         waitForRemoteConfig(waitedMs)
         showInterstitial(InterstitialPlacement.SPLASH, ::navigateToMain)
+    }
+
+    /** Splash App Open flow (enable.ads_splash=1): wait for the AOA within the budget, show it, then navigate. */
+    private suspend fun waitForAppOpenThenNavigate() {
+        delay(MIN_DELAY_MS)
+        var waitedMs = MIN_DELAY_MS
+        while (!AppOpenAds.isLoaded() && waitedMs < MAX_DELAY_MS) {
+            delay(CHECK_INTERVAL_MS)
+            waitedMs += CHECK_INTERVAL_MS
+        }
+        waitForRemoteConfig(waitedMs)
+        if (!AppOpenAds.show(this) { navigateToMain() }) navigateToMain()
     }
 
     /** Waits (within the shared delay budget) for Remote Config to settle before Home loads its banner. */

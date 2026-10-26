@@ -48,6 +48,34 @@ object AppOpenAds {
         current.show(activity)
     }
 
+    /** Whether a valid App Open ad is loaded and ready to show now. */
+    fun isLoaded(): Boolean = isValid()
+
+    /**
+     * Shows the loaded App Open ad (for the splash first-launch, via `enable.ads_splash=1`), then runs
+     * [onComplete]. Bypasses [AdGapGate] on purpose - splash is the first launch, no prior full-screen ad.
+     * Returns false (ad not shown) if ads are off, none is ready, or another full-screen item is up.
+     */
+    fun show(activity: Activity, onComplete: () -> Unit): Boolean {
+        if (!Ads.adsEnabled || !isValid()) return false
+        val current = ad ?: return false
+        if (!FullScreenGate.acquire(current)) return false
+        ad = null
+        current.adEventCallback = object : AppOpenAdEventCallback {
+            override fun onAdDismissedFullScreenContent() = runOnMainThread { finishShow(current, onComplete) }
+            override fun onAdFailedToShowFullScreenContent(fullScreenContentError: FullScreenContentError) =
+                runOnMainThread { finishShow(current, onComplete) }
+            override fun onAdPaid(adValue: AdValue) = AdjustRevenueLogger.log(adValue)
+        }
+        current.show(activity)
+        return true
+    }
+
+    private fun finishShow(shown: AppOpenAd, onComplete: () -> Unit) {
+        finish(shown)
+        onComplete()
+    }
+
     private fun finish(shown: AppOpenAd) {
         FullScreenGate.release(shown)
         AdGapGate.recordAppOpenShown()
