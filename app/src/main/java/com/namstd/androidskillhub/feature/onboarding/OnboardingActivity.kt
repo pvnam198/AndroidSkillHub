@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.namstd.androidskillhub.R
+import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.ui.base.BaseActivity
 import com.namstd.androidskillhub.databinding.ActivityOnboardingBinding
 import com.namstd.androidskillhub.feature.main.MainActivity
@@ -19,6 +20,7 @@ class OnboardingActivity : BaseActivity<ActivityOnboardingBinding>() {
             override fun createFragment(position: Int) =
                 if (position == AD_PAGE) OnboardingAdFragment() else OnboardingPageFragment.newInstance(contentIndex(position))
         }
+        binding.onboardingPager.isUserInputEnabled = RemoteConfig.introSwipe
         loadBanner(binding.bannerContainer)
     }
 

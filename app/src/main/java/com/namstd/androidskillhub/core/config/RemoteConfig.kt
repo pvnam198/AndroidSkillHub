@@ -10,22 +10,27 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** Feature flags controlled from Firebase Remote Config. */
+/**
+ * Các feature flag điều khiển từ xa qua Firebase Remote Config.
+ *
+ * Tài liệu đầy đủ (mỗi key làm gì, kiểu dữ liệu, fallback, ví dụ giá trị trên Firebase console) nằm ở
+ * `docs/remote-config.md`. Thêm một key = 4 chỗ phải sửa trong file này: một hằng `KEY_*`, một dòng seed
+ * trong `setDefaultsAsync`, một dòng trong `persistToCache()`, và một getter. Giữ tài liệu đó đồng bộ với file này.
+ */
 object RemoteConfig {
-    // Getter, not a field: Firebase caches the instance itself, and holding it in this object trips lint's StaticFieldLeak.
+    // Dùng getter, không phải field: Firebase tự cache instance của nó, giữ instance trong object này sẽ bị lint báo StaticFieldLeak.
     private val remoteConfig get() = Firebase.remoteConfig
     private lateinit var prefs: AppPreferences
 
     private val _isReady = MutableStateFlow(false)
 
-    /** True once [fetchAndActivate] has completed (success or failure) and flag reads below are settled. */
+    /** True sau khi [fetchAndActivate] hoàn tất (thành công hay thất bại) và các flag bên dưới đã settle. */
     val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
 
     /**
-     * [context] is used to seed [RemoteConfig] with the values persisted (in the app's shared
-     * [AppPreferences] file) from the last successful fetch, so reads below return last-known-good
-     * values immediately on this launch instead of the hardcoded defaults while [fetchAndActivate]
-     * is still in flight.
+     * [context] dùng để seed [RemoteConfig] bằng các giá trị đã lưu (trong file [AppPreferences] dùng chung
+     * của app) từ lần fetch thành công gần nhất, để các getter bên dưới trả về giá trị tốt gần nhất ngay khi
+     * app vừa mở, thay vì fallback cứng, trong lúc [fetchAndActivate] còn đang chạy.
      */
     fun initialize(context: Context) {
         prefs = AppPreferences.getInstance(context)
@@ -47,6 +52,7 @@ object RemoteConfig {
                 KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT to prefs.getCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT, 2L),
                 KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS to
                     prefs.getCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS, 5L),
+                KEY_INTRO_SWIPE to prefs.getCachedBoolean(KEY_INTRO_SWIPE, true),
             ),
         )
         remoteConfig.fetchAndActivate().addOnCompleteListener {
@@ -65,56 +71,74 @@ object RemoteConfig {
         prefs.putCachedLong(KEY_INTER_OPEN_GAP_SECONDS, interOpenGapMs / 1000)
         prefs.putCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT, postInterstitialNativeAdCount.toLong())
         prefs.putCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS, postInterstitialNativeAdDurationMs / 1000)
+        prefs.putCachedBoolean(KEY_INTRO_SWIPE, introSwipe)
     }
 
-    /** Whether [com.namstd.androidskillhub.core.ui.base.BaseActivity.showInterstitial] should run the interstitial+2-native-ad break. */
+    /** Khi true, [com.namstd.androidskillhub.core.ui.base.BaseActivity.showInterstitial] sẽ chạy interstitial + break 2 native ad sau đó. */
     val useCustomInterstitial: Boolean
         get() = remoteConfig.getBoolean(KEY_USE_CUSTOM_INTERSTITIAL)
 
     /**
-     * Which collapsible ad [com.namstd.androidskillhub.core.ads.BannerAds.load] builds: true for the
-     * native collapsible (one native ad, large then small - see [com.namstd.androidskillhub.core.ads.NativeCollapseAd]),
-     * false for AdMob's own collapsible banner.
+     * Kiểu collapsible mà [com.namstd.androidskillhub.core.ads.BannerAds.load] dựng: true = native collapsible
+     * (1 native ad, to rồi thu nhỏ - xem [com.namstd.androidskillhub.core.ads.NativeCollapseAd]),
+     * false = collapsible banner mặc định của AdMob.
      */
     val useNativeCollapsible: Boolean
         get() = remoteConfig.getBoolean(KEY_USE_NATIVE_COLLAPSIBLE)
 
     /**
-     * Whether the banner slot - what [com.namstd.androidskillhub.core.ads.BannerAds.load] puts in a
-     * screen's banner container: an AdMob banner (plain or collapsible), or the custom native
-     * collapsible when [useNativeCollapsible] swaps it in - reloads every [bannerSlotReloadGapMs]
-     * while its screen is shown. No other native ad in the app (feed, onboarding, post-interstitial)
-     * is affected.
+     * Banner slot - thứ mà [com.namstd.androidskillhub.core.ads.BannerAds.load] đặt vào ô banner của một màn:
+     * một AdMob banner (thường hoặc collapsible), hoặc native collapsible tự dựng khi [useNativeCollapsible]
+     * thay nó vào - có tự reload mỗi [bannerSlotReloadGapMs] khi màn đang hiển thị hay không. Không ảnh hưởng
+     * tới native ad khác trong app (feed, onboarding, post-interstitial).
      */
     val bannerSlotAutoReload: Boolean
         get() = remoteConfig.getBoolean(KEY_BANNER_SLOT_AUTO_RELOAD)
 
     /**
-     * The banner slot's reload timer: time from its ad being shown (or failing) to the next reload -
-     * see [bannerSlotAutoReload]. Default 0 = no timer. Screens that reload by hand ignore it.
+     * Timer reload của banner slot: thời gian từ lúc ad được hiển thị (hoặc load lỗi) tới lần reload kế tiếp -
+     * xem [bannerSlotAutoReload]. Mặc định 0 = không có timer. Màn nào reload bằng tay thì bỏ qua giá trị này.
      */
     val bannerSlotReloadGapMs: Long
         get() = remoteConfig.getLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS).coerceAtLeast(0L) * 1000
 
-    /** Minimum time between two Interstitial shows. See [com.namstd.androidskillhub.core.ads.AdGapGate]. */
+    /**
+     * Thời gian tối thiểu giữa 2 lần Interstitial - một inter yêu cầu trong khoảng này sẽ bị chặn.
+     * Giá trị config tính bằng giây (vd `10`); getter trả về ms. `0` = không có gap.
+     * Xem [com.namstd.androidskillhub.core.ads.AdGapGate].
+     */
     val interInterGapMs: Long
         get() = remoteConfig.getLong(KEY_INTER_INTER_GAP_SECONDS) * 1000
 
-    /** Minimum time between two App Open shows. See [com.namstd.androidskillhub.core.ads.AdGapGate]. */
+    /**
+     * Thời gian tối thiểu giữa 2 lần App Open. Giá trị config tính bằng giây; getter trả về ms. `0` = không có gap.
+     * Xem [com.namstd.androidskillhub.core.ads.AdGapGate].
+     */
     val openOpenGapMs: Long
         get() = remoteConfig.getLong(KEY_OPEN_OPEN_GAP_SECONDS) * 1000
 
-    /** Minimum time between an Interstitial show and an App Open show, either direction. */
+    /**
+     * Thời gian tối thiểu giữa 1 lần Interstitial và 1 lần App Open, cả 2 chiều (tránh 2 ad full-screen
+     * hiện liên tiếp khác định dạng). Giá trị config tính bằng giây; getter trả về ms. `0` = không có gap.
+     */
     val interOpenGapMs: Long
         get() = remoteConfig.getLong(KEY_INTER_OPEN_GAP_SECONDS) * 1000
 
-    /** How many sequential native ads show in the post-interstitial break. Clamped to 1-2 - [com.namstd.androidskillhub.feature.ads.PostInterstitialNativeAdDialogFragment] only supports a 2-stage flow. */
+    /** Số native ad hiển thị liên tiếp trong break sau interstitial. Clamp 1-2 - [com.namstd.androidskillhub.feature.ads.PostInterstitialNativeAdDialogFragment] chỉ hỗ trợ flow 2 stage. */
     val postInterstitialNativeAdCount: Int
         get() = remoteConfig.getLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT).toInt().coerceIn(1, 2)
 
-    /** How long each native ad stage stays up before its tap target (next/close) becomes available. */
+    /** Mỗi stage native ad đứng bao lâu trước khi nút thao tác (next/close) khả dụng. */
     val postInterstitialNativeAdDurationMs: Long
         get() = remoteConfig.getLong(KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS) * 1000
+
+    /**
+     * Màn Onboarding ([com.namstd.androidskillhub.feature.onboarding.OnboardingActivity]) có cho phép vuốt
+     * (`ViewPager2.isUserInputEnabled`) hay không. `true` (mặc định) = vuốt giữa các trang được;
+     * `false` = chỉ chuyển trang bằng nút Next. Fallback mặc định là `true` để giữ đúng hành vi gốc của ViewPager2.
+     */
+    val introSwipe: Boolean
+        get() = remoteConfig.getBoolean(KEY_INTRO_SWIPE)
 
     private const val KEY_USE_CUSTOM_INTERSTITIAL = "use_custom_interstitial"
     private const val KEY_USE_NATIVE_COLLAPSIBLE = "use_native_collapsible"
@@ -125,4 +149,5 @@ object RemoteConfig {
     private const val KEY_INTER_OPEN_GAP_SECONDS = "inter_open_gap_seconds"
     private const val KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT = "post_interstitial_native_ad_count"
     private const val KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS = "post_interstitial_native_ad_duration_seconds"
+    private const val KEY_INTRO_SWIPE = "intro_swipe"
 }
