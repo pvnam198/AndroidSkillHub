@@ -42,6 +42,12 @@ Key `enable` là công tắc xương sống: mỗi vị trí 1 số = bật/tắ
 
 **Default `ads_splash=2,inter=1,banner=2,onresume=1`** giữ hành vi cũ (Inter ở splash, Inter xen, banner collapsible, app-open khi quay lại). Lưu ý: hợp nhất banner → Splash/Onboarding đổi từ banner thường → collapsible theo giá trị chung. Loading native/welcome-back dùng `wait_time` làm đếm ngược.
 
+### Quảng cáo — layout native
+
+| Key | Kiểu | Fallback | Ý nghĩa |
+|---|---|---|---|
+| `native_template` | String | `native media` | Layout của native card render qua `NativeAds.renderDefaultCard`: `native media` (có ảnh), `native no media` (chỉ chữ), `native banner` (dải nhỏ), `native fullscreen` (card lớn). Áp cho các placement render mặc định (Language, Onboarding, Welcome back, banner-native). **Không** đổi feed / post-interstitial / native collapsible (layout cố định riêng). Parse ra `RemoteConfig.nativeTemplate` (`NativeTemplate`). |
+
 ### Quảng cáo — banner slot auto reload
 
 | Key | Kiểu | Fallback | Ý nghĩa |
@@ -101,7 +107,7 @@ Spec gốc (file `Remote Config.pdf`) mô tả bộ key legacy khác tên. App *
 - [x] `intro1_setup` — kiểu nút Next + vị trí indicator + delay + chấm tròn màn Onboarding *(26/10/2026)*
 - [x] `native_intro_use_icon_next` — nút Next/icon X cho native fullscreen onboarding (loading gate bằng `wait_time`) *(26/10/2026)*
 - [x] `enable` — bật/tắt + chọn loại QC theo vị trí (gồm AOA splash, native-inter, native-banner, welcome back) *(26/10/2026)*
-- [ ] `native templete` — chọn layout native động
+- [x] `native_template` — chọn layout native động (media/no media/banner/fullscreen) *(26/10/2026)*
 - [ ] `collap_config` — click-bait native collap
 - [ ] Tiering ID `highfloor / medium / all_price`
 

@@ -3,16 +3,22 @@ package com.namstd.androidskillhub.core.ads
 import android.app.Activity
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.TextView
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
+import com.google.android.libraries.ads.mobile.sdk.nativead.MediaView
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView
-import com.namstd.androidskillhub.databinding.AdNativeBinding
+import com.namstd.androidskillhub.R
+import com.namstd.androidskillhub.core.config.NativeTemplate
+import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.databinding.AdNativeShimmerBinding
 
 enum class NativePlacement {
@@ -291,28 +297,47 @@ object NativeAds {
     }
 
     private fun renderDefaultCard(activity: Activity, ad: NativeAd): NativeAdView {
-        val binding = AdNativeBinding.inflate(LayoutInflater.from(activity))
-        populate(ad, binding)
-        return binding.root
+        val view = LayoutInflater.from(activity).inflate(layoutFor(RemoteConfig.nativeTemplate), null) as NativeAdView
+        populateView(view, ad)
+        return view
     }
 
-    private fun populate(ad: NativeAd, binding: AdNativeBinding) {
-        val view = binding.root
-        view.headlineView = binding.adHeadline
-        view.bodyView = binding.adBody
-        view.advertiserView = binding.adAdvertiser
-        view.iconView = binding.adIcon
-        view.callToActionView = binding.adCallToAction
-        binding.adHeadline.text = ad.headline
-        binding.adBody.text = ad.body
-        binding.adAdvertiser.text = ad.advertiser
-        binding.adCallToAction.text = ad.callToAction
-        binding.adIcon.setImageDrawable(ad.icon?.drawable)
-        binding.adBody.visibility = visibility(ad.body)
-        binding.adAdvertiser.visibility = visibility(ad.advertiser)
-        binding.adCallToAction.visibility = visibility(ad.callToAction)
-        binding.adIcon.visibility = visibility(ad.icon)
-        view.registerNativeAd(ad, binding.adMedia)
+    /** Layout native card theo [RemoteConfig.nativeTemplate]. */
+    private fun layoutFor(template: NativeTemplate): Int = when (template) {
+        NativeTemplate.NO_MEDIA -> R.layout.ad_native_no_media
+        NativeTemplate.BANNER -> R.layout.ad_native_banner
+        NativeTemplate.FULLSCREEN -> R.layout.ad_native_fullscreen
+        NativeTemplate.MEDIA -> R.layout.ad_native
+    }
+
+    /**
+     * Gắn [ad] vào bất kỳ layout native card nào dùng chung id. `ad_media` (MediaView) và `ad_advertiser`
+     * là tùy chọn theo variant - thiếu thì bỏ qua; MediaView null khi không có.
+     */
+    private fun populateView(view: NativeAdView, ad: NativeAd) {
+        val icon = view.findViewById<ImageView>(R.id.ad_icon)
+        val headline = view.findViewById<TextView>(R.id.ad_headline)
+        val body = view.findViewById<TextView>(R.id.ad_body)
+        val cta = view.findViewById<Button>(R.id.ad_call_to_action)
+        val advertiser: TextView? = view.findViewById(R.id.ad_advertiser)
+        val media: MediaView? = view.findViewById(R.id.ad_media)
+
+        view.headlineView = headline
+        view.bodyView = body
+        view.iconView = icon
+        view.callToActionView = cta
+        advertiser?.let { view.advertiserView = it }
+
+        headline.text = ad.headline
+        body.text = ad.body
+        cta.text = ad.callToAction
+        icon.setImageDrawable(ad.icon?.drawable)
+        advertiser?.text = ad.advertiser
+        body.visibility = visibility(ad.body)
+        cta.visibility = visibility(ad.callToAction)
+        icon.visibility = visibility(ad.icon)
+        advertiser?.visibility = visibility(ad.advertiser)
+        view.registerNativeAd(ad, media)
     }
 
     private fun visibility(value: Any?) = if (value == null) View.GONE else View.VISIBLE

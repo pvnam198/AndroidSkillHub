@@ -32,6 +32,9 @@ data class EnableConfig(val adsSplash: Int, val inter: Int, val banner: Int, val
 /** Một dòng trên màn Debug Config: tên key, giá trị raw hiện tại, và gợi ý format. */
 data class DebugConfigEntry(val key: String, val value: String, val hint: String)
 
+/** Layout của native card (key `native_template`). NativeAds map enum này sang layout res. */
+enum class NativeTemplate { MEDIA, NO_MEDIA, BANNER, FULLSCREEN }
+
 /**
  * Các feature flag điều khiển từ xa qua Firebase Remote Config.
  *
@@ -88,6 +91,7 @@ object RemoteConfig {
                 KEY_INTRO1_SETUP to prefs.getCachedString(KEY_INTRO1_SETUP, DEFAULT_INTRO1_SETUP),
                 KEY_NATIVE_INTRO_USE_ICON_NEXT to
                     prefs.getCachedString(KEY_NATIVE_INTRO_USE_ICON_NEXT, DEFAULT_NATIVE_INTRO_USE_ICON_NEXT),
+                KEY_NATIVE_TEMPLATE to prefs.getCachedString(KEY_NATIVE_TEMPLATE, DEFAULT_NATIVE_TEMPLATE),
             ),
         )
         remoteConfig.fetchAndActivate().addOnCompleteListener {
@@ -111,6 +115,7 @@ object RemoteConfig {
         prefs.putCachedString(KEY_LANGUAGE_SETUP, remoteConfig.getString(KEY_LANGUAGE_SETUP))
         prefs.putCachedString(KEY_INTRO1_SETUP, remoteConfig.getString(KEY_INTRO1_SETUP))
         prefs.putCachedString(KEY_NATIVE_INTRO_USE_ICON_NEXT, remoteConfig.getString(KEY_NATIVE_INTRO_USE_ICON_NEXT))
+        prefs.putCachedString(KEY_NATIVE_TEMPLATE, remoteConfig.getString(KEY_NATIVE_TEMPLATE))
     }
 
     /**
@@ -263,6 +268,20 @@ object RemoteConfig {
         }
 
     /**
+     * Layout cho native card render qua [com.namstd.androidskillhub.core.ads.NativeAds] renderDefaultCard
+     * (key `native_template`): `native media` (có ảnh), `native no media` (chỉ chữ), `native banner` (dải nhỏ),
+     * `native fullscreen` (card lớn). Áp cho các placement render mặc định (Language, Onboarding, Welcome back,
+     * banner-native); feed/post-interstitial/collapsible giữ layout riêng.
+     */
+    val nativeTemplate: NativeTemplate
+        get() = when (rcString(KEY_NATIVE_TEMPLATE).trim().lowercase()) {
+            "native no media" -> NativeTemplate.NO_MEDIA
+            "native banner" -> NativeTemplate.BANNER
+            "native fullscreen" -> NativeTemplate.FULLSCREEN
+            else -> NativeTemplate.MEDIA
+        }
+
+    /**
      * [DEBUG] Mọi key + giá trị raw hiện tại (override nếu có, không thì Firebase/default) + gợi ý format,
      * cho màn Debug Config. Firebase lưu mọi kiểu dạng string nên [rcString] đọc được cả Long/Boolean.
      */
@@ -284,6 +303,7 @@ object RemoteConfig {
         KEY_LANGUAGE_SETUP to "next=1/2,loading=true/false",
         KEY_INTRO1_SETUP to "next=1/2,ds=0/1,delay=ms,dot=0/1",
         KEY_NATIVE_INTRO_USE_ICON_NEXT to "next=1/2,loading=true/false",
+        KEY_NATIVE_TEMPLATE to "native media | native no media | native banner | native fullscreen",
     )
 
     /** Tách chuỗi config dạng `k=v,k=v` (bỏ khoảng trắng thừa) thành map. */
@@ -312,4 +332,6 @@ object RemoteConfig {
     private const val DEFAULT_INTRO1_SETUP = "next=1,ds=1,delay=0,dot=0"
     private const val KEY_NATIVE_INTRO_USE_ICON_NEXT = "native_intro_use_icon_next"
     private const val DEFAULT_NATIVE_INTRO_USE_ICON_NEXT = "next=1,loading=false"
+    private const val KEY_NATIVE_TEMPLATE = "native_template"
+    private const val DEFAULT_NATIVE_TEMPLATE = "native media"
 }
