@@ -29,12 +29,18 @@ Toàn bộ feature flag điều khiển từ xa qua **Firebase Remote Config**.
 
 ## Danh sách key
 
-### Quảng cáo — bật/tắt & kiểu hiển thị
+### Quảng cáo — bật/tắt & chọn loại theo vị trí (`enable`)
 
-| Key | Kiểu | Fallback | Ý nghĩa |
+Key `enable` là công tắc xương sống: mỗi vị trí 1 số = bật/tắt + chọn loại. Dạng `ads_splash=2,inter=1,banner=2,onresume=1`; `0` = tắt vị trí đó. Parse ra `RemoteConfig.enable` (`EnableConfig`). **Thay cho 2 key cũ `use_custom_interstitial` & `use_native_collapsible`.**
+
+| Vị trí | Giá trị | Ý nghĩa | Nơi áp dụng |
 |---|---|---|---|
-| `use_custom_interstitial` | Boolean | `false` | Khi `true`, `BaseActivity.showInterstitial` chạy interstitial + break 2 native ad sau đó (thay vì chỉ 1 inter). |
-| `use_native_collapsible` | Boolean | `false` | Kiểu collapsible mà `BannerAds.load` dựng: `true` = native collapsible tự dựng (1 native, to rồi thu nhỏ — xem `NativeCollapseAd`); `false` = collapsible banner mặc định của AdMob. |
+| `ads_splash` | 0 off · 1 AOA · 2 Inter · 3 Inter+Native | Quảng cáo lúc mở app (màn Splash) | `SplashActivity` + `resolveFullScreenPlan` |
+| `inter` | 0 off · 1 Inter · 2 Native · 3 Inter+Native | Interstitial xen (Language/Onboarding) | `BaseActivity.showInterstitial` + `resolveFullScreenPlan` |
+| `banner` | 0 off · 1 Banner · 2 BannerCollap · 3 Native · 4 NativeCollap | Loại ô banner (mọi màn, hợp nhất) | `BannerAds.load` |
+| `onresume` | 0 off · 1 app-open · 2 welcome back | Khi quay lại app | `AndroidSkillHubApp.onStart` |
+
+**Default `ads_splash=2,inter=1,banner=2,onresume=1`** giữ hành vi cũ (Inter ở splash, Inter xen, banner collapsible, app-open khi quay lại). Lưu ý: hợp nhất banner → Splash/Onboarding đổi từ banner thường → collapsible theo giá trị chung. Loading native/welcome-back dùng `wait_time` làm đếm ngược.
 
 ### Quảng cáo — banner slot auto reload
 
@@ -94,7 +100,7 @@ Spec gốc (file `Remote Config.pdf`) mô tả bộ key legacy khác tên. App *
 - [x] `language_setup` — kiểu nút Next + loading màn Language *(26/10/2026)*
 - [x] `intro1_setup` — kiểu nút Next + vị trí indicator + delay + chấm tròn màn Onboarding *(26/10/2026)*
 - [x] `native_intro_use_icon_next` — nút Next/icon X cho native fullscreen onboarding (loading gate bằng `wait_time`) *(26/10/2026)*
-- [ ] `enable` — bật/tắt + chọn loại QC theo vị trí
+- [x] `enable` — bật/tắt + chọn loại QC theo vị trí (gồm AOA splash, native-inter, native-banner, welcome back) *(26/10/2026)*
 - [ ] `native templete` — chọn layout native động
 - [ ] `collap_config` — click-bait native collap
 - [ ] Tiering ID `highfloor / medium / all_price`
