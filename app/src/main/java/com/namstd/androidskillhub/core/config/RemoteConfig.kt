@@ -50,8 +50,7 @@ object RemoteConfig {
                 KEY_OPEN_OPEN_GAP_SECONDS to prefs.getCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, 0L),
                 KEY_INTER_OPEN_GAP_SECONDS to prefs.getCachedLong(KEY_INTER_OPEN_GAP_SECONDS, 0L),
                 KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT to prefs.getCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT, 2L),
-                KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS to
-                    prefs.getCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS, 5L),
+                KEY_WAIT_TIME to prefs.getCachedLong(KEY_WAIT_TIME, 5L),
                 KEY_INTRO_SWIPE to prefs.getCachedBoolean(KEY_INTRO_SWIPE, true),
             ),
         )
@@ -70,7 +69,7 @@ object RemoteConfig {
         prefs.putCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, openOpenGapMs / 1000)
         prefs.putCachedLong(KEY_INTER_OPEN_GAP_SECONDS, interOpenGapMs / 1000)
         prefs.putCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT, postInterstitialNativeAdCount.toLong())
-        prefs.putCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS, postInterstitialNativeAdDurationMs / 1000)
+        prefs.putCachedLong(KEY_WAIT_TIME, waitTimeMs / 1000)
         prefs.putCachedBoolean(KEY_INTRO_SWIPE, introSwipe)
     }
 
@@ -128,9 +127,14 @@ object RemoteConfig {
     val postInterstitialNativeAdCount: Int
         get() = remoteConfig.getLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT).toInt().coerceIn(1, 2)
 
-    /** Mỗi stage native ad đứng bao lâu trước khi nút thao tác (next/close) khả dụng. */
-    val postInterstitialNativeAdDurationMs: Long
-        get() = remoteConfig.getLong(KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS) * 1000
+    /**
+     * Số giây đếm ngược trên màn native fullscreen sau interstitial
+     * ([com.namstd.androidskillhub.feature.ads.PostInterstitialNativeAdDialogFragment]) trước khi
+     * icon X (đóng) hiện ra - và cũng là thời gian mỗi stage đứng trước khi nút Next khả dụng.
+     * Giá trị config tính bằng giây; getter trả về ms.
+     */
+    val waitTimeMs: Long
+        get() = remoteConfig.getLong(KEY_WAIT_TIME) * 1000
 
     /**
      * Màn Onboarding ([com.namstd.androidskillhub.feature.onboarding.OnboardingActivity]) có cho phép vuốt
@@ -148,6 +152,6 @@ object RemoteConfig {
     private const val KEY_OPEN_OPEN_GAP_SECONDS = "open_open_gap_seconds"
     private const val KEY_INTER_OPEN_GAP_SECONDS = "inter_open_gap_seconds"
     private const val KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT = "post_interstitial_native_ad_count"
-    private const val KEY_POST_INTERSTITIAL_NATIVE_AD_DURATION_SECONDS = "post_interstitial_native_ad_duration_seconds"
+    private const val KEY_WAIT_TIME = "wait_time"
     private const val KEY_INTRO_SWIPE = "intro_swipe"
 }

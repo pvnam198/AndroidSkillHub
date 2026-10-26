@@ -42,7 +42,7 @@ class PostInterstitialNativeAdDialogFragment : BaseDialogFragment<DialogNativeFu
     private val viewModel: PostInterstitialNativeAdViewModel by viewModels()
 
     private val totalStages: Int = RemoteConfig.postInterstitialNativeAdCount
-    private val durationMs: Long = RemoteConfig.postInterstitialNativeAdDurationMs
+    private val durationMs: Long = RemoteConfig.waitTimeMs
 
     private var currentAd: NativeAd? = null
     private var countdownTimer: CountDownTimer? = null

@@ -60,7 +60,7 @@ Dùng bởi `PostInterstitialNativeAdDialogFragment` (flow 2 stage).
 | Key | Kiểu | Fallback | Ý nghĩa |
 |---|---|---|---|
 | `post_interstitial_native_ad_count` | Long → Int | `2` | Số native ad hiển thị liên tiếp trong break sau inter. **Clamp 1–2** (dialog chỉ hỗ trợ flow 2 stage). |
-| `post_interstitial_native_ad_duration_seconds` | Long (giây) | `5` | Mỗi stage native đứng bao lâu trước khi nút thao tác (next/close) khả dụng. Getter nhân ×1000 ra ms. |
+| `wait_time` | Long (giây) | `5` | Số giây đếm ngược trên màn native fullscreen sau interstitial trước khi icon X (đóng) hiện ra — cũng là thời gian mỗi stage đứng trước khi nút Next khả dụng. Getter nhân ×1000 ra ms. |
 
 ### UI luồng mở app
 
@@ -75,7 +75,7 @@ Dùng bởi `PostInterstitialNativeAdDialogFragment` (flow 2 stage).
 Spec gốc (file `Remote Config.pdf`) mô tả bộ key legacy khác tên. App **không** dùng tên legacy đó. Tiến độ theo tính năng:
 
 - [x] `intro_swipe` — cho/không cho swipe Onboarding *(26/10/2026)*
-- [ ] `wait_time` — đếm ngược icon X native fullscreen
+- [x] `wait_time` — đếm ngược icon X native fullscreen (sau interstitial; đổi tên từ `post_interstitial_native_ad_duration_seconds`) *(26/10/2026)*
 - [ ] `language_delay_millis` — delay hiện nút Next màn Language
 - [ ] `step_count` — inter hiện theo bước
 - [ ] `inter_delay_time` phần `ignore` — bỏ qua gap cho một số inter
