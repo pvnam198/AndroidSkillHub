@@ -23,6 +23,9 @@ enum class NativePlacement {
 
     /** Native ad rendered as a plain banner slot (enable.banner=3) - see [BannerAds]. */
     BANNER_NATIVE,
+
+    /** Native ad on the welcome-back screen (enable.onresume=2) - see WelcomeBackActivity. */
+    WELCOME_BACK,
 }
 
 /**

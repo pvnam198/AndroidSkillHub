@@ -40,6 +40,11 @@
         <activity
             android:name=".feature.premium.PremiumActivity"
             android:exported="false" />
+        <activity
+            android:name=".feature.welcome.WelcomeBackActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:noHistory="true" />
     </application>
 
 </manifest>

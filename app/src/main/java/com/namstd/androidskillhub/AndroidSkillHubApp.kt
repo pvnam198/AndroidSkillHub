@@ -9,8 +9,11 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.adjust.sdk.Adjust
 import com.adjust.sdk.AdjustConfig
 import com.namstd.androidskillhub.core.ads.Ads
+import com.namstd.androidskillhub.core.ads.NativeAds
+import com.namstd.androidskillhub.core.ads.NativePlacement
 import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.preferences.AppPreferences
+import com.namstd.androidskillhub.feature.welcome.WelcomeBackActivity
 import java.lang.ref.WeakReference
 
 class AndroidSkillHubApp : Application(), Application.ActivityLifecycleCallbacks,
@@ -35,10 +38,19 @@ class AndroidSkillHubApp : Application(), Application.ActivityLifecycleCallbacks
             currentActivity.get()?.let { activity ->
                 val preferences = AppPreferences.getInstance(this@AndroidSkillHubApp)
                 if (preferences.setupCompleted) {
-                    Ads.onReturnToForeground(activity)
+                    when (RemoteConfig.enable.onresume) {
+                        1 -> Ads.onReturnToForeground(activity)
+                        2 -> WelcomeBackActivity.launch(activity)
+                        // 0 = không hiện gì khi quay lại app
+                    }
                 }
             }
         } else hasEnteredForeground = true
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        // Hâm nóng native cho welcome back khi app xuống nền, để sẵn lúc quay lại.
+        if (RemoteConfig.enable.onresume == 2) NativeAds.preload(NativePlacement.WELCOME_BACK)
     }
 
     override fun onActivityResumed(activity: Activity) {

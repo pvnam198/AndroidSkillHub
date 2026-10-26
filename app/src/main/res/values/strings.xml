@@ -34,4 +34,6 @@
     <string name="onboarding_title_3">You are ready</string>
     <string name="onboarding_body_3">Explore the sample and its privacy controls.</string>
     <string name="action_may_display_ad">This action may display an ad.</string>
+    <string name="welcome_back_title">Welcome back</string>
+    <string name="welcome_back_message">Thanks for coming back!</string>
 </resources>
