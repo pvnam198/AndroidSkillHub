@@ -45,6 +45,9 @@
             android:exported="false"
             android:launchMode="singleTop"
             android:noHistory="true" />
+        <activity
+            android:name=".feature.debug.DebugConfigActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

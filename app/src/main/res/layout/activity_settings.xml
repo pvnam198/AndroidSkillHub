@@ -6,6 +6,7 @@
     <Button android:id="@+id/privacy_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/privacy_options" />
     <Button android:id="@+id/reset_onboarding_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/reset_onboarding" />
     <Button android:id="@+id/premium_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/go_premium" />
+    <Button android:id="@+id/debug_config_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/debug_config" android:visibility="gone" />
     <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1" />
     <FrameLayout android:id="@+id/banner_container" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="50dp" />
 </LinearLayout>

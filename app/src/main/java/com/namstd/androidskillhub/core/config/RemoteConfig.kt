@@ -29,6 +29,9 @@ data class Intro1Setup(val nextStyle: Int, val indicatorPosition: Int, val delay
  */
 data class EnableConfig(val adsSplash: Int, val inter: Int, val banner: Int, val onresume: Int)
 
+/** Một dòng trên màn Debug Config: tên key, giá trị raw hiện tại, và gợi ý format. */
+data class DebugConfigEntry(val key: String, val value: String, val hint: String)
+
 /**
  * Các feature flag điều khiển từ xa qua Firebase Remote Config.
  *
@@ -40,6 +43,14 @@ object RemoteConfig {
     // Dùng getter, không phải field: Firebase tự cache instance của nó, giữ instance trong object này sẽ bị lint báo StaticFieldLeak.
     private val remoteConfig get() = Firebase.remoteConfig
     private lateinit var prefs: AppPreferences
+
+    // DEBUG override: nếu có giá trị cục bộ (đặt ở màn Debug Config), nó thắng Firebase/default.
+    private fun debugOverride(key: String): String? =
+        if (BuildConfig.DEBUG) DebugOverrides.get(key)?.takeIf { it.isNotBlank() } else null
+
+    private fun rcString(key: String): String = debugOverride(key) ?: remoteConfig.getString(key)
+    private fun rcLong(key: String): Long = debugOverride(key)?.toLongOrNull() ?: remoteConfig.getLong(key)
+    private fun rcBoolean(key: String): Boolean = debugOverride(key)?.toBooleanStrictOrNull() ?: remoteConfig.getBoolean(key)
 
     private val _isReady = MutableStateFlow(false)
 
@@ -53,6 +64,7 @@ object RemoteConfig {
      */
     fun initialize(context: Context) {
         prefs = AppPreferences.getInstance(context)
+        if (BuildConfig.DEBUG) DebugOverrides.init(context)
         remoteConfig.setConfigSettingsAsync(
             remoteConfigSettings {
                 minimumFetchIntervalInSeconds = if (BuildConfig.DEBUG) 0 else 3600
@@ -109,7 +121,7 @@ object RemoteConfig {
      */
     val enable: EnableConfig
         get() {
-            val m = parseKeyValues(remoteConfig.getString(KEY_ENABLE))
+            val m = parseKeyValues(rcString(KEY_ENABLE))
             return EnableConfig(
                 adsSplash = m["ads_splash"]?.toIntOrNull() ?: 2,
                 inter = m["inter"]?.toIntOrNull() ?: 1,
@@ -124,14 +136,14 @@ object RemoteConfig {
      * tới native ad khác trong app (feed, onboarding, post-interstitial).
      */
     val bannerSlotAutoReload: Boolean
-        get() = remoteConfig.getBoolean(KEY_BANNER_SLOT_AUTO_RELOAD)
+        get() = rcBoolean(KEY_BANNER_SLOT_AUTO_RELOAD)
 
     /**
      * Timer reload của banner slot: thời gian từ lúc ad được hiển thị (hoặc load lỗi) tới lần reload kế tiếp -
      * xem [bannerSlotAutoReload]. Mặc định 0 = không có timer. Màn nào reload bằng tay thì bỏ qua giá trị này.
      */
     val refreshRateMs: Long
-        get() = remoteConfig.getLong(KEY_REFRESH_RATE).coerceAtLeast(0L) * 1000
+        get() = rcLong(KEY_REFRESH_RATE).coerceAtLeast(0L) * 1000
 
     /**
      * Cấu hình gap giữa các Interstitial + danh sách loại inter được MIỄN gap đó.
@@ -144,7 +156,7 @@ object RemoteConfig {
         get() {
             var timeSeconds = 0L
             var ignore = emptySet<String>()
-            remoteConfig.getString(KEY_INTER_DELAY_TIME).split(",").forEach { part ->
+            rcString(KEY_INTER_DELAY_TIME).split(",").forEach { part ->
                 val pair = part.split("=", limit = 2)
                 val value = pair.getOrElse(1) { "" }.trim()
                 when (pair[0].trim()) {
@@ -160,18 +172,18 @@ object RemoteConfig {
      * Xem [com.namstd.androidskillhub.core.ads.AdGapGate].
      */
     val openOpenGapMs: Long
-        get() = remoteConfig.getLong(KEY_OPEN_OPEN_GAP_SECONDS) * 1000
+        get() = rcLong(KEY_OPEN_OPEN_GAP_SECONDS) * 1000
 
     /**
      * Thời gian tối thiểu giữa 1 lần Interstitial và 1 lần App Open, cả 2 chiều (tránh 2 ad full-screen
      * hiện liên tiếp khác định dạng). Giá trị config tính bằng giây; getter trả về ms. `0` = không có gap.
      */
     val interOpenGapMs: Long
-        get() = remoteConfig.getLong(KEY_INTER_OPEN_GAP_SECONDS) * 1000
+        get() = rcLong(KEY_INTER_OPEN_GAP_SECONDS) * 1000
 
     /** Số native ad hiển thị liên tiếp trong break sau interstitial. Clamp 1-2 - [com.namstd.androidskillhub.feature.ads.PostInterstitialNativeAdDialogFragment] chỉ hỗ trợ flow 2 stage. */
     val postInterstitialNativeAdCount: Int
-        get() = remoteConfig.getLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT).toInt().coerceIn(1, 2)
+        get() = rcLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT).toInt().coerceIn(1, 2)
 
     /**
      * Số giây đếm ngược trên màn native fullscreen sau interstitial
@@ -180,7 +192,7 @@ object RemoteConfig {
      * Giá trị config tính bằng giây; getter trả về ms.
      */
     val waitTimeMs: Long
-        get() = remoteConfig.getLong(KEY_WAIT_TIME) * 1000
+        get() = rcLong(KEY_WAIT_TIME) * 1000
 
     /**
      * Thời gian chờ (mili-giây) trước khi nút xác nhận ở màn chọn ngôn ngữ
@@ -188,7 +200,7 @@ object RemoteConfig {
      * Giá trị config đã tính bằng ms (không nhân thêm).
      */
     val languageDelayMillis: Long
-        get() = remoteConfig.getLong(KEY_LANGUAGE_DELAY_MILLIS).coerceAtLeast(0L)
+        get() = rcLong(KEY_LANGUAGE_DELAY_MILLIS).coerceAtLeast(0L)
 
     /**
      * Tần suất hiển thị interstitial theo số lần yêu cầu: chỉ hiện ở lần yêu cầu chia hết cho giá trị này
@@ -196,7 +208,7 @@ object RemoteConfig {
      * ([com.namstd.androidskillhub.core.preferences.AppPreferences.interstitialStepCounter]). Clamp tối thiểu 1.
      */
     val stepCount: Int
-        get() = remoteConfig.getLong(KEY_STEP_COUNT).toInt().coerceAtLeast(1)
+        get() = rcLong(KEY_STEP_COUNT).toInt().coerceAtLeast(1)
 
     /**
      * Màn Onboarding ([com.namstd.androidskillhub.feature.onboarding.OnboardingActivity]) có cho phép vuốt
@@ -204,7 +216,7 @@ object RemoteConfig {
      * `false` = chỉ chuyển trang bằng nút Next. Fallback mặc định là `true` để giữ đúng hành vi gốc của ViewPager2.
      */
     val introSwipe: Boolean
-        get() = remoteConfig.getBoolean(KEY_INTRO_SWIPE)
+        get() = rcBoolean(KEY_INTRO_SWIPE)
 
     /**
      * Cấu hình nút Next màn chọn ngôn ngữ (key `language_setup`, dạng `next=1,loading=true`):
@@ -213,7 +225,7 @@ object RemoteConfig {
      */
     val languageSetup: LanguageSetup
         get() {
-            val m = parseKeyValues(remoteConfig.getString(KEY_LANGUAGE_SETUP))
+            val m = parseKeyValues(rcString(KEY_LANGUAGE_SETUP))
             return LanguageSetup(
                 nextStyle = m["next"]?.toIntOrNull() ?: 1,
                 loading = m["loading"]?.toBoolean() ?: false,
@@ -227,7 +239,7 @@ object RemoteConfig {
      */
     val intro1Setup: Intro1Setup
         get() {
-            val m = parseKeyValues(remoteConfig.getString(KEY_INTRO1_SETUP))
+            val m = parseKeyValues(rcString(KEY_INTRO1_SETUP))
             return Intro1Setup(
                 nextStyle = m["next"]?.toIntOrNull() ?: 1,
                 indicatorPosition = m["ds"]?.toIntOrNull() ?: 1,
@@ -243,12 +255,36 @@ object RemoteConfig {
      */
     val nativeIntroUseIconNext: LanguageSetup
         get() {
-            val m = parseKeyValues(remoteConfig.getString(KEY_NATIVE_INTRO_USE_ICON_NEXT))
+            val m = parseKeyValues(rcString(KEY_NATIVE_INTRO_USE_ICON_NEXT))
             return LanguageSetup(
                 nextStyle = m["next"]?.toIntOrNull() ?: 1,
                 loading = m["loading"]?.toBoolean() ?: false,
             )
         }
+
+    /**
+     * [DEBUG] Mọi key + giá trị raw hiện tại (override nếu có, không thì Firebase/default) + gợi ý format,
+     * cho màn Debug Config. Firebase lưu mọi kiểu dạng string nên [rcString] đọc được cả Long/Boolean.
+     */
+    fun debugEntries(): List<DebugConfigEntry> =
+        DEBUG_HINTS.map { (key, hint) -> DebugConfigEntry(key, rcString(key), hint) }
+
+    private val DEBUG_HINTS: List<Pair<String, String>> = listOf(
+        KEY_ENABLE to "ads_splash=2,inter=1,banner=2,onresume=1 (0=off)",
+        KEY_INTER_DELAY_TIME to "time=10,ignore=ads_splash|inter_language|inter_intro",
+        KEY_WAIT_TIME to "giây (đếm ngược trước khi hiện X native fullscreen)",
+        KEY_STEP_COUNT to "số: inter hiện lần chia hết cho N (1=mọi lần)",
+        KEY_REFRESH_RATE to "giây reload banner (0=không)",
+        KEY_BANNER_SLOT_AUTO_RELOAD to "true/false",
+        KEY_OPEN_OPEN_GAP_SECONDS to "giây gap App Open↔App Open",
+        KEY_INTER_OPEN_GAP_SECONDS to "giây gap Inter↔App Open",
+        KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT to "1-2 native sau inter",
+        KEY_INTRO_SWIPE to "true/false (vuốt Onboarding)",
+        KEY_LANGUAGE_DELAY_MILLIS to "mili-giây trước khi hiện nút Language",
+        KEY_LANGUAGE_SETUP to "next=1/2,loading=true/false",
+        KEY_INTRO1_SETUP to "next=1/2,ds=0/1,delay=ms,dot=0/1",
+        KEY_NATIVE_INTRO_USE_ICON_NEXT to "next=1/2,loading=true/false",
+    )
 
     /** Tách chuỗi config dạng `k=v,k=v` (bỏ khoảng trắng thừa) thành map. */
     private fun parseKeyValues(raw: String): Map<String, String> =

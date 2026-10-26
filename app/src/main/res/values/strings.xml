@@ -36,4 +36,8 @@
     <string name="action_may_display_ad">This action may display an ad.</string>
     <string name="welcome_back_title">Welcome back</string>
     <string name="welcome_back_message">Thanks for coming back!</string>
+    <string name="debug_config">Debug config</string>
+    <string name="debug_config_title">Debug Remote Config</string>
+    <string name="debug_save">Lưu override</string>
+    <string name="debug_reset">Xoá hết override</string>
 </resources>
