@@ -53,6 +53,14 @@ Dùng bởi `AdGapGate`. Getter nhân ×1000 ra ms.
 | `open_open_gap_seconds` | Long (giây) | `0` | Thời gian tối thiểu giữa 2 lần App Open. |
 | `inter_open_gap_seconds` | Long (giây) | `0` | Thời gian tối thiểu giữa 1 Interstitial và 1 App Open (cả 2 chiều). |
 
+### Quảng cáo — tần suất interstitial theo lượt
+
+Gate ở `BaseActivity.showInterstitial`. Khác với các key gap ở trên (chặn theo **thời gian**), key này chặn theo **số lần**.
+
+| Key | Kiểu | Fallback | Ý nghĩa |
+|---|---|---|---|
+| `step_count` | Long → Int | `1` | Chỉ hiện interstitial ở lần yêu cầu **chia hết cho** giá trị này (`1` = mọi lần; `2` = cứ 2 lần/1 lần...). Bộ đếm **lưu qua các lần mở app** (`AppPreferences.interstitialStepCounter`), nên với trigger hiện tại (chỉ ở Splash) `step_count=2` nghĩa là "cứ 2 lần mở app hiện 1 lần". Clamp tối thiểu 1. |
+
 ### Quảng cáo — break native sau interstitial
 
 Dùng bởi `PostInterstitialNativeAdDialogFragment` (flow 2 stage).
@@ -78,7 +86,7 @@ Spec gốc (file `Remote Config.pdf`) mô tả bộ key legacy khác tên. App *
 - [x] `intro_swipe` — cho/không cho swipe Onboarding *(26/10/2026)*
 - [x] `wait_time` — đếm ngược icon X native fullscreen (sau interstitial; đổi tên từ `post_interstitial_native_ad_duration_seconds`) *(26/10/2026)*
 - [x] `language_delay_millis` — delay hiện nút xác nhận màn Language *(26/10/2026)*
-- [ ] `step_count` — inter hiện theo bước
+- [x] `step_count` — inter chỉ hiện ở lần chia hết cho N (bộ đếm persist) *(26/10/2026)*
 - [ ] `inter_delay_time` phần `ignore` — bỏ qua gap cho một số inter
 - [ ] `language_setup`, `native_intro_use_icon_next`, `intro1_setup` — config UI Language/Onboarding
 - [ ] `enable` — bật/tắt + chọn loại QC theo vị trí

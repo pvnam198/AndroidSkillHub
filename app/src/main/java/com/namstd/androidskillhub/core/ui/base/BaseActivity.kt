@@ -107,6 +107,7 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
      * Single implementation for the whole app - [BaseFragment.showInterstitial] delegates here instead of duplicating it.
      */
     internal fun showInterstitial(onComplete: () -> Unit) {
+        if (!passesInterstitialStepGate()) { onComplete(); return }
         if (!RemoteConfig.useCustomInterstitial) {
             if (!InterstitialAds.show(this, onComplete = onComplete)) onComplete()
             return
@@ -115,6 +116,16 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
         NativeAds.preload(NativePlacement.POST_INTERSTITIAL)
         val afterInterstitial = { runNativeAdBreak(onComplete) }
         if (!InterstitialAds.show(this, onComplete = afterInterstitial)) afterInterstitial()
+    }
+
+    /**
+     * Tần suất interstitial theo lần yêu cầu ([RemoteConfig.stepCount]): tăng bộ đếm (lưu qua các lần mở app)
+     * và chỉ cho hiện ở lần chia hết cho stepCount; các lần khác bỏ qua (gọi onComplete luôn). stepCount=1 = mọi lần.
+     */
+    private fun passesInterstitialStepGate(): Boolean {
+        val count = prefs.interstitialStepCounter + 1
+        prefs.interstitialStepCounter = count
+        return count % RemoteConfig.stepCount == 0
     }
 
     private fun runNativeAdBreak(onComplete: () -> Unit) {

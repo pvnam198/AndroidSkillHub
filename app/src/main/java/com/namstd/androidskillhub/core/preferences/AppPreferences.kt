@@ -24,6 +24,14 @@ class AppPreferences private constructor(context: Context) {
         get() = values.getBoolean(KEY_PREMIUM, false)
         set(value) = values.edit { putBoolean(KEY_PREMIUM, value) }
 
+    /**
+     * Đếm số lần đã yêu cầu hiện interstitial, lưu qua các lần mở app. Dùng cho tần suất
+     * `step_count`: chỉ hiện ở lần chia hết cho [com.namstd.androidskillhub.core.config.RemoteConfig.stepCount].
+     */
+    var interstitialStepCounter: Int
+        get() = values.getInt(KEY_INTER_STEP_COUNTER, 0)
+        set(value) = values.edit { putInt(KEY_INTER_STEP_COUNTER, value) }
+
     fun applyLocale(language: String = selectedLanguage) {
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(language))
     }
@@ -50,6 +58,7 @@ class AppPreferences private constructor(context: Context) {
         private const val KEY_LANGUAGE = "selected_language"
         private const val KEY_SETUP_COMPLETE = "setup_completed"
         private const val KEY_PREMIUM = "is_premium"
+        private const val KEY_INTER_STEP_COUNTER = "interstitial_step_counter"
 
         @Volatile private var instance: AppPreferences? = null
 

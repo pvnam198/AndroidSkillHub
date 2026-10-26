@@ -53,6 +53,7 @@ object RemoteConfig {
                 KEY_WAIT_TIME to prefs.getCachedLong(KEY_WAIT_TIME, 5L),
                 KEY_INTRO_SWIPE to prefs.getCachedBoolean(KEY_INTRO_SWIPE, true),
                 KEY_LANGUAGE_DELAY_MILLIS to prefs.getCachedLong(KEY_LANGUAGE_DELAY_MILLIS, 800L),
+                KEY_STEP_COUNT to prefs.getCachedLong(KEY_STEP_COUNT, 1L),
             ),
         )
         remoteConfig.fetchAndActivate().addOnCompleteListener {
@@ -73,6 +74,7 @@ object RemoteConfig {
         prefs.putCachedLong(KEY_WAIT_TIME, waitTimeMs / 1000)
         prefs.putCachedBoolean(KEY_INTRO_SWIPE, introSwipe)
         prefs.putCachedLong(KEY_LANGUAGE_DELAY_MILLIS, languageDelayMillis)
+        prefs.putCachedLong(KEY_STEP_COUNT, stepCount.toLong())
     }
 
     /** Khi true, [com.namstd.androidskillhub.core.ui.base.BaseActivity.showInterstitial] sẽ chạy interstitial + break 2 native ad sau đó. */
@@ -147,6 +149,14 @@ object RemoteConfig {
         get() = remoteConfig.getLong(KEY_LANGUAGE_DELAY_MILLIS).coerceAtLeast(0L)
 
     /**
+     * Tần suất hiển thị interstitial theo số lần yêu cầu: chỉ hiện ở lần yêu cầu chia hết cho giá trị này
+     * (`1` = mọi lần; `2` = cứ 2 lần hiện 1 lần...). Bộ đếm lưu qua các lần mở app
+     * ([com.namstd.androidskillhub.core.preferences.AppPreferences.interstitialStepCounter]). Clamp tối thiểu 1.
+     */
+    val stepCount: Int
+        get() = remoteConfig.getLong(KEY_STEP_COUNT).toInt().coerceAtLeast(1)
+
+    /**
      * Màn Onboarding ([com.namstd.androidskillhub.feature.onboarding.OnboardingActivity]) có cho phép vuốt
      * (`ViewPager2.isUserInputEnabled`) hay không. `true` (mặc định) = vuốt giữa các trang được;
      * `false` = chỉ chuyển trang bằng nút Next. Fallback mặc định là `true` để giữ đúng hành vi gốc của ViewPager2.
@@ -165,4 +175,5 @@ object RemoteConfig {
     private const val KEY_WAIT_TIME = "wait_time"
     private const val KEY_INTRO_SWIPE = "intro_swipe"
     private const val KEY_LANGUAGE_DELAY_MILLIS = "language_delay_millis"
+    private const val KEY_STEP_COUNT = "step_count"
 }
