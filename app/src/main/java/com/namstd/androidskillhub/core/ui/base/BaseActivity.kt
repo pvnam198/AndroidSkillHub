@@ -40,7 +40,7 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
     /**
      * Loads a banner into [container] and destroys it automatically in [onDestroy].
      * [autoReload] / [reloadGapMs] set its reload timer and default to Remote Config's
-     * ([RemoteConfig.bannerSlotAutoReload] / [RemoteConfig.bannerSlotReloadGapMs]); a screen can
+     * ([RemoteConfig.bannerSlotAutoReload] / [RemoteConfig.refreshRateMs]); a screen can
      * pass its own. Any other reload trigger (resume, tab switch...) is the screen's own code
      * calling [reloadBanner]. For a premium user nothing loads and [container] is hidden.
      */
@@ -48,7 +48,7 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
         container: ViewGroup,
         collapsible: Boolean = false,
         autoReload: Boolean = RemoteConfig.bannerSlotAutoReload,
-        reloadGapMs: Long = RemoteConfig.bannerSlotReloadGapMs,
+        reloadGapMs: Long = RemoteConfig.refreshRateMs,
     ) {
         bannerContainer = container
         if (isPremiumUser()) {

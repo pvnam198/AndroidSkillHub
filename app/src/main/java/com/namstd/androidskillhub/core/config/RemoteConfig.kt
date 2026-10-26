@@ -47,8 +47,8 @@ object RemoteConfig {
                 KEY_USE_CUSTOM_INTERSTITIAL to prefs.getCachedBoolean(KEY_USE_CUSTOM_INTERSTITIAL, false),
                 KEY_USE_NATIVE_COLLAPSIBLE to prefs.getCachedBoolean(KEY_USE_NATIVE_COLLAPSIBLE, false),
                 KEY_BANNER_SLOT_AUTO_RELOAD to prefs.getCachedBoolean(KEY_BANNER_SLOT_AUTO_RELOAD, false),
-                KEY_BANNER_SLOT_RELOAD_GAP_SECONDS to
-                    prefs.getCachedLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS, 0L),
+                KEY_REFRESH_RATE to
+                    prefs.getCachedLong(KEY_REFRESH_RATE, 0L),
                 KEY_INTER_DELAY_TIME to prefs.getCachedString(KEY_INTER_DELAY_TIME, DEFAULT_INTER_DELAY_TIME),
                 KEY_OPEN_OPEN_GAP_SECONDS to prefs.getCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, 0L),
                 KEY_INTER_OPEN_GAP_SECONDS to prefs.getCachedLong(KEY_INTER_OPEN_GAP_SECONDS, 0L),
@@ -69,7 +69,7 @@ object RemoteConfig {
         prefs.putCachedBoolean(KEY_USE_CUSTOM_INTERSTITIAL, useCustomInterstitial)
         prefs.putCachedBoolean(KEY_USE_NATIVE_COLLAPSIBLE, useNativeCollapsible)
         prefs.putCachedBoolean(KEY_BANNER_SLOT_AUTO_RELOAD, bannerSlotAutoReload)
-        prefs.putCachedLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS, bannerSlotReloadGapMs / 1000)
+        prefs.putCachedLong(KEY_REFRESH_RATE, refreshRateMs / 1000)
         prefs.putCachedString(KEY_INTER_DELAY_TIME, remoteConfig.getString(KEY_INTER_DELAY_TIME))
         prefs.putCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, openOpenGapMs / 1000)
         prefs.putCachedLong(KEY_INTER_OPEN_GAP_SECONDS, interOpenGapMs / 1000)
@@ -95,7 +95,7 @@ object RemoteConfig {
     /**
      * Banner slot - thứ mà [com.namstd.androidskillhub.core.ads.BannerAds.load] đặt vào ô banner của một màn:
      * một AdMob banner (thường hoặc collapsible), hoặc native collapsible tự dựng khi [useNativeCollapsible]
-     * thay nó vào - có tự reload mỗi [bannerSlotReloadGapMs] khi màn đang hiển thị hay không. Không ảnh hưởng
+     * thay nó vào - có tự reload mỗi [refreshRateMs] khi màn đang hiển thị hay không. Không ảnh hưởng
      * tới native ad khác trong app (feed, onboarding, post-interstitial).
      */
     val bannerSlotAutoReload: Boolean
@@ -105,8 +105,8 @@ object RemoteConfig {
      * Timer reload của banner slot: thời gian từ lúc ad được hiển thị (hoặc load lỗi) tới lần reload kế tiếp -
      * xem [bannerSlotAutoReload]. Mặc định 0 = không có timer. Màn nào reload bằng tay thì bỏ qua giá trị này.
      */
-    val bannerSlotReloadGapMs: Long
-        get() = remoteConfig.getLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS).coerceAtLeast(0L) * 1000
+    val refreshRateMs: Long
+        get() = remoteConfig.getLong(KEY_REFRESH_RATE).coerceAtLeast(0L) * 1000
 
     /**
      * Cấu hình gap giữa các Interstitial + danh sách loại inter được MIỄN gap đó.
@@ -184,7 +184,7 @@ object RemoteConfig {
     private const val KEY_USE_CUSTOM_INTERSTITIAL = "use_custom_interstitial"
     private const val KEY_USE_NATIVE_COLLAPSIBLE = "use_native_collapsible"
     private const val KEY_BANNER_SLOT_AUTO_RELOAD = "banner_slot_auto_reload"
-    private const val KEY_BANNER_SLOT_RELOAD_GAP_SECONDS = "banner_slot_reload_gap_seconds"
+    private const val KEY_REFRESH_RATE = "refresh_rate"
     private const val KEY_INTER_DELAY_TIME = "inter_delay_time"
     private const val DEFAULT_INTER_DELAY_TIME = "time=0,ignore="
     private const val KEY_OPEN_OPEN_GAP_SECONDS = "open_open_gap_seconds"

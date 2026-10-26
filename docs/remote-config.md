@@ -40,8 +40,8 @@ Toàn bộ feature flag điều khiển từ xa qua **Firebase Remote Config**.
 
 | Key | Kiểu | Fallback | Ý nghĩa |
 |---|---|---|---|
-| `banner_slot_auto_reload` | Boolean | `false` | Bật timer tự reload banner slot (ô banner của màn) sau mỗi `banner_slot_reload_gap_seconds` khi màn đang hiển thị. Không ảnh hưởng native khác (feed, onboarding, post-interstitial). |
-| `banner_slot_reload_gap_seconds` | Long (giây) | `0` | Chu kỳ reload banner slot. `0` = không có timer. Màn nào reload bằng tay thì bỏ qua giá trị này. Getter nhân ×1000 ra ms. |
+| `banner_slot_auto_reload` | Boolean | `false` | Bật timer tự reload banner slot (ô banner của màn) sau mỗi `refresh_rate` khi màn đang hiển thị. Không ảnh hưởng native khác (feed, onboarding, post-interstitial). |
+| `refresh_rate` | Long (giây) | `0` | Chu kỳ reload banner slot ("sau bao nhiêu giây load lại quảng cáo" trong spec). `0` = không có timer. Màn nào reload bằng tay thì bỏ qua giá trị này. Getter nhân ×1000 ra ms. **Đổi tên từ `banner_slot_reload_gap_seconds` cho khớp spec.** |
 
 ### Quảng cáo — khoảng cách (gap) giữa các lần hiển thị
 
