@@ -20,6 +20,9 @@ enum class NativePlacement {
 
     /** Shared app-wide slot for [NativeCollapseAd] - one placement for every collapsible call site. */
     NATIVE_COLLAPSIBLE,
+
+    /** Native ad rendered as a plain banner slot (enable.banner=3) - see [BannerAds]. */
+    BANNER_NATIVE,
 }
 
 /**

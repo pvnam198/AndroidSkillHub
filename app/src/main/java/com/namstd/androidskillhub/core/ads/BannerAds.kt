@@ -8,6 +8,7 @@ import android.os.SystemClock
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -45,8 +46,8 @@ object BannerAds {
             BannerSlotHandle.NONE
         }
         4 -> NativeCollapseAd(activity, container, autoReload = autoReload, reloadGapMs = reloadGapMs, onStatus = onStatus).start()
+        3 -> NativeBannerSlot(activity, container as FrameLayout).start()
         2 -> loadAdMobBanner(activity, container, collapsible = true, autoReload, reloadGapMs, onStatus)
-        // 3 = native thường trong ô banner: Phase 2 làm thật; tạm fallback banner thường như 1.
         else -> loadAdMobBanner(activity, container, collapsible = false, autoReload, reloadGapMs, onStatus)
     }
 
@@ -228,5 +229,36 @@ private class AdMobBannerAd(
             clearShimmer()
             container.removeAllViews()
         }
+    }
+}
+
+/**
+ * A native ad rendered into the banner slot (enable.banner=3). Uses [NativeAds.subscribe] (shimmer +
+ * fade-in + no-fill hide handled there). [reload] re-subscribes a fresh native on demand (e.g. tab
+ * switch); there is no built-in reload timer for this variant.
+ */
+private class NativeBannerSlot(
+    private val activity: Activity,
+    private val container: FrameLayout,
+) : BannerSlotHandle {
+    private var handle: AdHandle? = null
+
+    fun start(): BannerSlotHandle {
+        subscribe()
+        return this
+    }
+
+    private fun subscribe() {
+        handle = NativeAds.subscribe(activity, NativePlacement.BANNER_NATIVE, container, preloadOnShow = true)
+    }
+
+    override fun reload() {
+        handle?.destroy()
+        subscribe()
+    }
+
+    override fun destroy() {
+        handle?.destroy()
+        handle = null
     }
 }
