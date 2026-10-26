@@ -16,11 +16,13 @@ import com.namstd.androidskillhub.core.ads.AdHandle
 import com.namstd.androidskillhub.core.ads.Ads
 import com.namstd.androidskillhub.core.ads.BannerAds
 import com.namstd.androidskillhub.core.ads.BannerSlotHandle
+import com.namstd.androidskillhub.core.ads.FullScreenAdPlan
 import com.namstd.androidskillhub.core.ads.FullScreenGate
 import com.namstd.androidskillhub.core.ads.InterstitialAds
 import com.namstd.androidskillhub.core.ads.InterstitialPlacement
 import com.namstd.androidskillhub.core.ads.NativeAds
 import com.namstd.androidskillhub.core.ads.NativePlacement
+import com.namstd.androidskillhub.core.ads.resolveFullScreenPlan
 import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.preferences.AppPreferences
 import com.namstd.androidskillhub.feature.ads.PostInterstitialNativeAdDialogFragment
@@ -46,7 +48,6 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
      */
     protected fun loadBanner(
         container: ViewGroup,
-        collapsible: Boolean = false,
         autoReload: Boolean = RemoteConfig.bannerSlotAutoReload,
         reloadGapMs: Long = RemoteConfig.refreshRateMs,
     ) {
@@ -56,7 +57,7 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
             return
         }
         container.post {
-            if (!isPremiumUser()) bannerHandle = BannerAds.load(this, container, collapsible, autoReload, reloadGapMs)
+            if (!isPremiumUser()) bannerHandle = BannerAds.load(this, container, autoReload, reloadGapMs)
         }
     }
 
@@ -104,19 +105,31 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
     }
 
     /**
-     * Interstitial, or "custom interstitial" (+2 native ad break) if enabled via Remote Config, then runs [onComplete].
-     * Single implementation for the whole app - [BaseFragment.showInterstitial] delegates here instead of duplicating it.
+     * Chạy quảng cáo full-screen cho [placement] theo [RemoteConfig.enable] (xem [resolveFullScreenPlan]),
+     * rồi gọi [onComplete]. Loại: plain interstitial / interstitial + native break / native-only / tắt.
+     * (APP_OPEN chỉ ở SPLASH và do SplashActivity lo; ở đây coi như tắt.)
+     * Single implementation cho toàn app - [BaseFragment.showInterstitial] uỷ quyền về đây.
      */
     internal fun showInterstitial(placement: InterstitialPlacement, onComplete: () -> Unit) {
+        val plan = resolveFullScreenPlan(placement, RemoteConfig.enable)
+        if (plan == FullScreenAdPlan.OFF || plan == FullScreenAdPlan.APP_OPEN) { onComplete(); return }
         if (!passesInterstitialStepGate()) { onComplete(); return }
-        if (!RemoteConfig.useCustomInterstitial) {
-            if (!InterstitialAds.show(this, placement, onComplete = onComplete)) onComplete()
-            return
+        when (plan) {
+            FullScreenAdPlan.INTERSTITIAL ->
+                if (!InterstitialAds.show(this, placement, onComplete = onComplete)) onComplete()
+            FullScreenAdPlan.NATIVE_ONLY -> {
+                if (!Ads.adsEnabled || FullScreenGate.isBusy()) { onComplete(); return }
+                NativeAds.preload(NativePlacement.POST_INTERSTITIAL)
+                runNativeAdBreak(onComplete)
+            }
+            FullScreenAdPlan.INTER_PLUS_NATIVE -> {
+                if (!Ads.adsEnabled || FullScreenGate.isBusy()) { onComplete(); return }
+                NativeAds.preload(NativePlacement.POST_INTERSTITIAL)
+                val afterInterstitial = { runNativeAdBreak(onComplete) }
+                if (!InterstitialAds.show(this, placement, onComplete = afterInterstitial)) afterInterstitial()
+            }
+            else -> onComplete()
         }
-        if (!Ads.adsEnabled || FullScreenGate.isBusy()) { onComplete(); return }
-        NativeAds.preload(NativePlacement.POST_INTERSTITIAL)
-        val afterInterstitial = { runNativeAdBreak(onComplete) }
-        if (!InterstitialAds.show(this, placement, onComplete = afterInterstitial)) afterInterstitial()
     }
 
     /**

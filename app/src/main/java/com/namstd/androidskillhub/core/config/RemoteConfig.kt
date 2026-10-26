@@ -23,6 +23,13 @@ data class LanguageSetup(val nextStyle: Int, val loading: Boolean)
 data class Intro1Setup(val nextStyle: Int, val indicatorPosition: Int, val delayMs: Long, val showDots: Boolean)
 
 /**
+ * Giá trị đã parse của key `enable`: loại quảng cáo cho từng vị trí (`0` = tắt vị trí đó).
+ * ads_splash: 1 AOA/2 Inter/3 Inter+Native · inter: 1 Inter/2 Native/3 Inter+Native ·
+ * banner: 1 Banner/2 BannerCollap/3 Native/4 NativeCollap · onresume: 1 app-open/2 welcome back.
+ */
+data class EnableConfig(val adsSplash: Int, val inter: Int, val banner: Int, val onresume: Int)
+
+/**
  * Các feature flag điều khiển từ xa qua Firebase Remote Config.
  *
  * Tài liệu đầy đủ (mỗi key làm gì, kiểu dữ liệu, fallback, ví dụ giá trị trên Firebase console) nằm ở
@@ -53,8 +60,7 @@ object RemoteConfig {
         )
         remoteConfig.setDefaultsAsync(
             mapOf(
-                KEY_USE_CUSTOM_INTERSTITIAL to prefs.getCachedBoolean(KEY_USE_CUSTOM_INTERSTITIAL, false),
-                KEY_USE_NATIVE_COLLAPSIBLE to prefs.getCachedBoolean(KEY_USE_NATIVE_COLLAPSIBLE, false),
+                KEY_ENABLE to prefs.getCachedString(KEY_ENABLE, DEFAULT_ENABLE),
                 KEY_BANNER_SLOT_AUTO_RELOAD to prefs.getCachedBoolean(KEY_BANNER_SLOT_AUTO_RELOAD, false),
                 KEY_REFRESH_RATE to
                     prefs.getCachedLong(KEY_REFRESH_RATE, 0L),
@@ -79,8 +85,7 @@ object RemoteConfig {
     }
 
     private fun persistToCache() {
-        prefs.putCachedBoolean(KEY_USE_CUSTOM_INTERSTITIAL, useCustomInterstitial)
-        prefs.putCachedBoolean(KEY_USE_NATIVE_COLLAPSIBLE, useNativeCollapsible)
+        prefs.putCachedString(KEY_ENABLE, remoteConfig.getString(KEY_ENABLE))
         prefs.putCachedBoolean(KEY_BANNER_SLOT_AUTO_RELOAD, bannerSlotAutoReload)
         prefs.putCachedLong(KEY_REFRESH_RATE, refreshRateMs / 1000)
         prefs.putCachedString(KEY_INTER_DELAY_TIME, remoteConfig.getString(KEY_INTER_DELAY_TIME))
@@ -96,22 +101,26 @@ object RemoteConfig {
         prefs.putCachedString(KEY_NATIVE_INTRO_USE_ICON_NEXT, remoteConfig.getString(KEY_NATIVE_INTRO_USE_ICON_NEXT))
     }
 
-    /** Khi true, [com.namstd.androidskillhub.core.ui.base.BaseActivity.showInterstitial] sẽ chạy interstitial + break 2 native ad sau đó. */
-    val useCustomInterstitial: Boolean
-        get() = remoteConfig.getBoolean(KEY_USE_CUSTOM_INTERSTITIAL)
-
     /**
-     * Kiểu collapsible mà [com.namstd.androidskillhub.core.ads.BannerAds.load] dựng: true = native collapsible
-     * (1 native ad, to rồi thu nhỏ - xem [com.namstd.androidskillhub.core.ads.NativeCollapseAd]),
-     * false = collapsible banner mặc định của AdMob.
+     * Bật/tắt + chọn loại quảng cáo theo từng vị trí (key `enable`, dạng
+     * `ads_splash=2,inter=1,banner=2,onresume=1`; `0` = tắt vị trí đó). Xem [EnableConfig].
+     * Thay cho 2 key cũ use_custom_interstitial & use_native_collapsible. Định tuyến qua
+     * [com.namstd.androidskillhub.core.ads.resolveFullScreenPlan] (inter/splash) và [com.namstd.androidskillhub.core.ads.BannerAds] (banner).
      */
-    val useNativeCollapsible: Boolean
-        get() = remoteConfig.getBoolean(KEY_USE_NATIVE_COLLAPSIBLE)
+    val enable: EnableConfig
+        get() {
+            val m = parseKeyValues(remoteConfig.getString(KEY_ENABLE))
+            return EnableConfig(
+                adsSplash = m["ads_splash"]?.toIntOrNull() ?: 2,
+                inter = m["inter"]?.toIntOrNull() ?: 1,
+                banner = m["banner"]?.toIntOrNull() ?: 2,
+                onresume = m["onresume"]?.toIntOrNull() ?: 1,
+            )
+        }
 
     /**
-     * Banner slot - thứ mà [com.namstd.androidskillhub.core.ads.BannerAds.load] đặt vào ô banner của một màn:
-     * một AdMob banner (thường hoặc collapsible), hoặc native collapsible tự dựng khi [useNativeCollapsible]
-     * thay nó vào - có tự reload mỗi [refreshRateMs] khi màn đang hiển thị hay không. Không ảnh hưởng
+     * Banner slot - thứ mà [com.namstd.androidskillhub.core.ads.BannerAds.load] đặt vào ô banner của một màn
+     * (loại do [enable] quyết định) - có tự reload mỗi [refreshRateMs] khi màn đang hiển thị hay không. Không ảnh hưởng
      * tới native ad khác trong app (feed, onboarding, post-interstitial).
      */
     val bannerSlotAutoReload: Boolean
@@ -248,8 +257,8 @@ object RemoteConfig {
             if (pair.size == 2) pair[0].trim() to pair[1].trim() else null
         }.toMap()
 
-    private const val KEY_USE_CUSTOM_INTERSTITIAL = "use_custom_interstitial"
-    private const val KEY_USE_NATIVE_COLLAPSIBLE = "use_native_collapsible"
+    private const val KEY_ENABLE = "enable"
+    private const val DEFAULT_ENABLE = "ads_splash=2,inter=1,banner=2,onresume=1"
     private const val KEY_BANNER_SLOT_AUTO_RELOAD = "banner_slot_auto_reload"
     private const val KEY_REFRESH_RATE = "refresh_rate"
     private const val KEY_INTER_DELAY_TIME = "inter_delay_time"

@@ -24,12 +24,10 @@ import com.namstd.androidskillhub.databinding.AdBannerShimmerBinding
 
 object BannerAds {
     /**
-     * Loads a banner into [container]. When [collapsible] is true, Remote Config picks one of two
-     * variants: AdMob's own collapsible banner, or - if [RemoteConfig.useNativeCollapsible] is on -
-     * the native collapsible ([NativeCollapseAd]: one native ad that opens large over the screen and
-     * collapses into [container] as a small strip). This is the single entry point for both so every
-     * screen's [collapsible] slot gets the swap for free. Pure routing - the actual loads live in
-     * [loadAdMobBanner] and [NativeCollapseAd].
+     * Loads a banner into [container]. Loại do [RemoteConfig.enable] (`banner`) quyết định:
+     * `0` = tắt (ẩn ô), `1` = AdMob banner thường, `2` = AdMob collapsible, `3` = native thường
+     * (làm thật ở Phase 2, tạm fallback banner thường), `4` = native collapsible ([NativeCollapseAd]:
+     * 1 native ad to rồi thu nhỏ thành dải). Pure routing - load thật ở [loadAdMobBanner]/[NativeCollapseAd].
      *
      * [autoReload] / [reloadGapMs] set the slot's reload timer (off, or 0, for none) - supplied by the
      * caller, never read from config here; the returned
@@ -38,15 +36,18 @@ object BannerAds {
     fun load(
         activity: Activity,
         container: ViewGroup,
-        collapsible: Boolean = false,
         autoReload: Boolean,
         reloadGapMs: Long,
         onStatus: (String) -> Unit = {},
-    ): BannerSlotHandle {
-        if (collapsible && RemoteConfig.useNativeCollapsible) {
-            return NativeCollapseAd(activity, container, autoReload = autoReload, reloadGapMs = reloadGapMs, onStatus = onStatus).start()
+    ): BannerSlotHandle = when (RemoteConfig.enable.banner) {
+        0 -> {
+            container.visibility = View.GONE
+            BannerSlotHandle.NONE
         }
-        return loadAdMobBanner(activity, container, collapsible, autoReload, reloadGapMs, onStatus)
+        4 -> NativeCollapseAd(activity, container, autoReload = autoReload, reloadGapMs = reloadGapMs, onStatus = onStatus).start()
+        2 -> loadAdMobBanner(activity, container, collapsible = true, autoReload, reloadGapMs, onStatus)
+        // 3 = native thường trong ô banner: Phase 2 làm thật; tạm fallback banner thường như 1.
+        else -> loadAdMobBanner(activity, container, collapsible = false, autoReload, reloadGapMs, onStatus)
     }
 
     /** Loads a real AdMob banner into [container] - plain, or AdMob's own collapsible variant when [collapsible]. */

@@ -41,7 +41,6 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment() {
      */
     protected fun loadBanner(
         container: ViewGroup,
-        collapsible: Boolean = false,
         autoReload: Boolean = RemoteConfig.bannerSlotAutoReload,
         reloadGapMs: Long = RemoteConfig.refreshRateMs,
     ) {
@@ -52,7 +51,7 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment() {
         }
         container.post {
             if (_binding != null && !isPremiumUser()) {
-                bannerHandle = BannerAds.load(requireActivity(), container, collapsible, autoReload, reloadGapMs)
+                bannerHandle = BannerAds.load(requireActivity(), container, autoReload, reloadGapMs)
             }
         }
     }

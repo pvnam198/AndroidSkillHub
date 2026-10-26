@@ -28,7 +28,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     override fun initViews() {
         AppOpenAds.load()
         // Main reloads its banner slot by hand - on resume and on tab switch - instead of on a timer.
-        loadBanner(binding.bannerContainer, collapsible = true, autoReload = false)
+        loadBanner(binding.bannerContainer, autoReload = false)
         binding.mainFeedPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount() = TAB_COUNT
             override fun createFragment(position: Int) = MainFeedPageFragment.newInstance(position)
