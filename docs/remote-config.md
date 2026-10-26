@@ -45,13 +45,13 @@ Toàn bộ feature flag điều khiển từ xa qua **Firebase Remote Config**.
 
 ### Quảng cáo — khoảng cách (gap) giữa các lần hiển thị
 
-Dùng bởi `AdGapGate`. Getter nhân ×1000 ra ms.
+Dùng bởi `AdGapGate`. Getter nhân ×1000 ra ms (trừ `inter_delay_time` — xem dưới).
 
 | Key | Kiểu | Fallback | Ý nghĩa |
 |---|---|---|---|
-| `inter_inter_gap_seconds` | Long (giây) | `0` | Thời gian tối thiểu giữa 2 lần Interstitial. |
+| `inter_delay_time` | String | `time=0,ignore=` | Gap giữa 2 Interstitial **+ danh sách loại inter được miễn gap**. Dạng `time=10,ignore=ads_splash\|inter_language\|inter_intro`: `time` = gap (giây), `ignore` = các inter (`InterstitialPlacement.key`: `ads_splash`, `inter_language`, `inter_intro`) luôn hiện bất kể gap. **Thay cho `inter_inter_gap_seconds` cũ.** Parse ra `RemoteConfig.interDelay` (`InterDelayConfig`). |
 | `open_open_gap_seconds` | Long (giây) | `0` | Thời gian tối thiểu giữa 2 lần App Open. |
-| `inter_open_gap_seconds` | Long (giây) | `0` | Thời gian tối thiểu giữa 1 Interstitial và 1 App Open (cả 2 chiều). |
+| `inter_open_gap_seconds` | Long (giây) | `0` | Thời gian tối thiểu giữa 1 Interstitial và 1 App Open (cả 2 chiều). Phần này **không** bị `ignore` của `inter_delay_time` bỏ qua. |
 
 ### Quảng cáo — tần suất interstitial theo lượt
 
@@ -87,7 +87,7 @@ Spec gốc (file `Remote Config.pdf`) mô tả bộ key legacy khác tên. App *
 - [x] `wait_time` — đếm ngược icon X native fullscreen (sau interstitial; đổi tên từ `post_interstitial_native_ad_duration_seconds`) *(26/10/2026)*
 - [x] `language_delay_millis` — delay hiện nút xác nhận màn Language *(26/10/2026)*
 - [x] `step_count` — inter chỉ hiện ở lần chia hết cho N (bộ đếm persist) *(26/10/2026)*
-- [ ] `inter_delay_time` phần `ignore` — bỏ qua gap cho một số inter
+- [x] `inter_delay_time` (time + `ignore`) — gap giữa inter + miễn gap cho một số loại inter (thay `inter_inter_gap_seconds`) *(26/10/2026)*
 - [ ] `language_setup`, `native_intro_use_icon_next`, `intro1_setup` — config UI Language/Onboarding
 - [ ] `enable` — bật/tắt + chọn loại QC theo vị trí
 - [ ] `native templete` — chọn layout native động

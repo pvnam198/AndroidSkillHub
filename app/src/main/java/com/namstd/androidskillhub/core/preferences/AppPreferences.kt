@@ -49,6 +49,12 @@ class AppPreferences private constructor(context: Context) {
         values.edit { putLong(key, value) }
     }
 
+    fun getCachedString(key: String, default: String): String = values.getString(key, default) ?: default
+
+    fun putCachedString(key: String, value: String) {
+        values.edit { putString(key, value) }
+    }
+
     fun resetOnboarding() {
         setupCompleted = false
     }

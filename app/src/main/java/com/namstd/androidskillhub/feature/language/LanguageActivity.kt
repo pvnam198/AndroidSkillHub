@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.namstd.androidskillhub.core.ads.InterstitialPlacement
 import com.namstd.androidskillhub.core.ads.NativeAds
 import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.ads.NativePlacement
@@ -50,7 +51,7 @@ class LanguageActivity : BaseActivity<ActivityLanguageBinding>() {
         binding.applyButton.setOnClickListener {
             prefs.selectedLanguage = selectedLanguage.code
             prefs.applyLocale(selectedLanguage.code)
-            showInterstitial { if (!isFinishing) goToNext() }
+            showInterstitial(InterstitialPlacement.LANGUAGE) { if (!isFinishing) goToNext() }
         }
     }
 

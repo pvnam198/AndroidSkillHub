@@ -14,6 +14,16 @@ import kotlinx.coroutines.flow.StateFlow
 
 enum class InterstitialState { IDLE, LOADING, READY, FAILED }
 
+/**
+ * Các điểm bung interstitial có tên, để đối chiếu với danh sách `ignore` trong
+ * [RemoteConfig.interDelay] (inter nằm trong ignore được miễn gap giữa các inter). [key] khớp token trên config.
+ */
+enum class InterstitialPlacement(val key: String) {
+    SPLASH("ads_splash"),
+    LANGUAGE("inter_language"),
+    INTRO("inter_intro"),
+}
+
 object InterstitialAds {
     private val mutableState = MutableStateFlow(InterstitialState.IDLE)
     val state: StateFlow<InterstitialState> = mutableState
@@ -46,9 +56,20 @@ object InterstitialAds {
         )
     }
 
-    fun show(activity: Activity, onStatus: (String) -> Unit = {}, onComplete: () -> Unit = {}): Boolean {
+    fun show(
+        activity: Activity,
+        placement: InterstitialPlacement,
+        onStatus: (String) -> Unit = {},
+        onComplete: () -> Unit = {},
+    ): Boolean {
         if (!Ads.adsEnabled) return false
-        if (!AdGapGate.canShowInterstitial(RemoteConfig.interInterGapMs, RemoteConfig.interOpenGapMs)) {
+        val delay = RemoteConfig.interDelay
+        if (!AdGapGate.canShowInterstitial(
+                delay.gapMs,
+                RemoteConfig.interOpenGapMs,
+                skipInterGap = placement.key in delay.ignore,
+            )
+        ) {
             onStatus("Interstitial: gap not elapsed")
             return false
         }

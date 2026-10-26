@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/** Giá trị đã parse của key `inter_delay_time`: gap giữa các interstitial (ms) + các loại inter được miễn gap. */
+data class InterDelayConfig(val gapMs: Long, val ignore: Set<String>)
+
 /**
  * Các feature flag điều khiển từ xa qua Firebase Remote Config.
  *
@@ -46,7 +49,7 @@ object RemoteConfig {
                 KEY_BANNER_SLOT_AUTO_RELOAD to prefs.getCachedBoolean(KEY_BANNER_SLOT_AUTO_RELOAD, false),
                 KEY_BANNER_SLOT_RELOAD_GAP_SECONDS to
                     prefs.getCachedLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS, 0L),
-                KEY_INTER_INTER_GAP_SECONDS to prefs.getCachedLong(KEY_INTER_INTER_GAP_SECONDS, 0L),
+                KEY_INTER_DELAY_TIME to prefs.getCachedString(KEY_INTER_DELAY_TIME, DEFAULT_INTER_DELAY_TIME),
                 KEY_OPEN_OPEN_GAP_SECONDS to prefs.getCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, 0L),
                 KEY_INTER_OPEN_GAP_SECONDS to prefs.getCachedLong(KEY_INTER_OPEN_GAP_SECONDS, 0L),
                 KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT to prefs.getCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT, 2L),
@@ -67,7 +70,7 @@ object RemoteConfig {
         prefs.putCachedBoolean(KEY_USE_NATIVE_COLLAPSIBLE, useNativeCollapsible)
         prefs.putCachedBoolean(KEY_BANNER_SLOT_AUTO_RELOAD, bannerSlotAutoReload)
         prefs.putCachedLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS, bannerSlotReloadGapMs / 1000)
-        prefs.putCachedLong(KEY_INTER_INTER_GAP_SECONDS, interInterGapMs / 1000)
+        prefs.putCachedString(KEY_INTER_DELAY_TIME, remoteConfig.getString(KEY_INTER_DELAY_TIME))
         prefs.putCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, openOpenGapMs / 1000)
         prefs.putCachedLong(KEY_INTER_OPEN_GAP_SECONDS, interOpenGapMs / 1000)
         prefs.putCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT, postInterstitialNativeAdCount.toLong())
@@ -106,12 +109,26 @@ object RemoteConfig {
         get() = remoteConfig.getLong(KEY_BANNER_SLOT_RELOAD_GAP_SECONDS).coerceAtLeast(0L) * 1000
 
     /**
-     * Thời gian tối thiểu giữa 2 lần Interstitial - một inter yêu cầu trong khoảng này sẽ bị chặn.
-     * Giá trị config tính bằng giây (vd `10`); getter trả về ms. `0` = không có gap.
-     * Xem [com.namstd.androidskillhub.core.ads.AdGapGate].
+     * Cấu hình gap giữa các Interstitial + danh sách loại inter được MIỄN gap đó.
+     * Giá trị config dạng chuỗi `time=10,ignore=ads_splash|inter_language|inter_intro`:
+     * `time` = gap giữa 2 inter (giây; getter đổi ra ms), `ignore` = các
+     * [com.namstd.androidskillhub.core.ads.InterstitialPlacement.key] luôn được hiện bất kể gap.
+     * Thay cho key cũ `inter_inter_gap_seconds`. Xem [com.namstd.androidskillhub.core.ads.AdGapGate].
      */
-    val interInterGapMs: Long
-        get() = remoteConfig.getLong(KEY_INTER_INTER_GAP_SECONDS) * 1000
+    val interDelay: InterDelayConfig
+        get() {
+            var timeSeconds = 0L
+            var ignore = emptySet<String>()
+            remoteConfig.getString(KEY_INTER_DELAY_TIME).split(",").forEach { part ->
+                val pair = part.split("=", limit = 2)
+                val value = pair.getOrElse(1) { "" }.trim()
+                when (pair[0].trim()) {
+                    "time" -> timeSeconds = value.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
+                    "ignore" -> ignore = value.split("|").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+                }
+            }
+            return InterDelayConfig(gapMs = timeSeconds * 1000, ignore = ignore)
+        }
 
     /**
      * Thời gian tối thiểu giữa 2 lần App Open. Giá trị config tính bằng giây; getter trả về ms. `0` = không có gap.
@@ -168,7 +185,8 @@ object RemoteConfig {
     private const val KEY_USE_NATIVE_COLLAPSIBLE = "use_native_collapsible"
     private const val KEY_BANNER_SLOT_AUTO_RELOAD = "banner_slot_auto_reload"
     private const val KEY_BANNER_SLOT_RELOAD_GAP_SECONDS = "banner_slot_reload_gap_seconds"
-    private const val KEY_INTER_INTER_GAP_SECONDS = "inter_inter_gap_seconds"
+    private const val KEY_INTER_DELAY_TIME = "inter_delay_time"
+    private const val DEFAULT_INTER_DELAY_TIME = "time=0,ignore="
     private const val KEY_OPEN_OPEN_GAP_SECONDS = "open_open_gap_seconds"
     private const val KEY_INTER_OPEN_GAP_SECONDS = "inter_open_gap_seconds"
     private const val KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT = "post_interstitial_native_ad_count"

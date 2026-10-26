@@ -7,6 +7,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.namstd.androidskillhub.core.ads.Ads
 import com.namstd.androidskillhub.core.ads.InterstitialAds
+import com.namstd.androidskillhub.core.ads.InterstitialPlacement
 import com.namstd.androidskillhub.core.ads.InterstitialState
 import com.namstd.androidskillhub.core.ads.NativeAds
 import com.namstd.androidskillhub.core.ads.NativePlacement
@@ -38,7 +39,7 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
             lifecycleScope.launch {
                 delay(MIN_DELAY_MS)
                 waitForRemoteConfig()
-                showInterstitial(::navigateToMain)
+                showInterstitial(InterstitialPlacement.SPLASH, ::navigateToMain)
             }
             return
         }
@@ -72,7 +73,7 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
             waitedMs += CHECK_INTERVAL_MS
         }
         waitForRemoteConfig(waitedMs)
-        showInterstitial(::navigateToMain)
+        showInterstitial(InterstitialPlacement.SPLASH, ::navigateToMain)
     }
 
     /** Waits (within the shared delay budget) for Remote Config to settle before Home loads its banner. */

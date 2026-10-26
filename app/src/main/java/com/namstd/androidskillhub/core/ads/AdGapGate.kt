@@ -8,9 +8,10 @@ object AdGapGate {
     fun canShowInterstitial(
         interInterGapMs: Long,
         interOpenGapMs: Long,
+        skipInterGap: Boolean = false,
         now: Long = System.currentTimeMillis(),
     ): Boolean =
-        now - lastInterstitialShownAt >= interInterGapMs &&
+        (skipInterGap || now - lastInterstitialShownAt >= interInterGapMs) &&
             now - lastAppOpenShownAt >= interOpenGapMs
 
     fun canShowAppOpen(

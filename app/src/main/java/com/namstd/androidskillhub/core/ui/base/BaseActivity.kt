@@ -18,6 +18,7 @@ import com.namstd.androidskillhub.core.ads.BannerAds
 import com.namstd.androidskillhub.core.ads.BannerSlotHandle
 import com.namstd.androidskillhub.core.ads.FullScreenGate
 import com.namstd.androidskillhub.core.ads.InterstitialAds
+import com.namstd.androidskillhub.core.ads.InterstitialPlacement
 import com.namstd.androidskillhub.core.ads.NativeAds
 import com.namstd.androidskillhub.core.ads.NativePlacement
 import com.namstd.androidskillhub.core.config.RemoteConfig
@@ -106,16 +107,16 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
      * Interstitial, or "custom interstitial" (+2 native ad break) if enabled via Remote Config, then runs [onComplete].
      * Single implementation for the whole app - [BaseFragment.showInterstitial] delegates here instead of duplicating it.
      */
-    internal fun showInterstitial(onComplete: () -> Unit) {
+    internal fun showInterstitial(placement: InterstitialPlacement, onComplete: () -> Unit) {
         if (!passesInterstitialStepGate()) { onComplete(); return }
         if (!RemoteConfig.useCustomInterstitial) {
-            if (!InterstitialAds.show(this, onComplete = onComplete)) onComplete()
+            if (!InterstitialAds.show(this, placement, onComplete = onComplete)) onComplete()
             return
         }
         if (!Ads.adsEnabled || FullScreenGate.isBusy()) { onComplete(); return }
         NativeAds.preload(NativePlacement.POST_INTERSTITIAL)
         val afterInterstitial = { runNativeAdBreak(onComplete) }
-        if (!InterstitialAds.show(this, onComplete = afterInterstitial)) afterInterstitial()
+        if (!InterstitialAds.show(this, placement, onComplete = afterInterstitial)) afterInterstitial()
     }
 
     /**

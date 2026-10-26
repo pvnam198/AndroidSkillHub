@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.namstd.androidskillhub.R
+import com.namstd.androidskillhub.core.ads.InterstitialPlacement
 import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.ui.base.BaseActivity
 import com.namstd.androidskillhub.databinding.ActivityOnboardingBinding
@@ -41,7 +42,7 @@ class OnboardingActivity : BaseActivity<ActivityOnboardingBinding>() {
 
     private fun finishSetup() {
         prefs.setupCompleted = true
-        showInterstitial {
+        showInterstitial(InterstitialPlacement.INTRO) {
             if (!isFinishing) {
                 startActivity(Intent(this, MainActivity::class.java))
                 finish()

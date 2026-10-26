@@ -11,6 +11,7 @@ import androidx.viewbinding.ViewBinding
 import com.namstd.androidskillhub.core.ads.AdHandle
 import com.namstd.androidskillhub.core.ads.BannerAds
 import com.namstd.androidskillhub.core.ads.BannerSlotHandle
+import com.namstd.androidskillhub.core.ads.InterstitialPlacement
 import com.namstd.androidskillhub.core.ads.NativeAds
 import com.namstd.androidskillhub.core.ads.NativePlacement
 import com.namstd.androidskillhub.core.config.RemoteConfig
@@ -102,8 +103,8 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment() {
     }
 
     /** Delegates to the hosting [BaseActivity] - single implementation for the whole app, see there. */
-    protected fun showInterstitial(onComplete: () -> Unit) {
-        (requireActivity() as BaseActivity<*>).showInterstitial(onComplete)
+    protected fun showInterstitial(placement: InterstitialPlacement, onComplete: () -> Unit) {
+        (requireActivity() as BaseActivity<*>).showInterstitial(placement, onComplete)
     }
 
     protected abstract fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?): VB
