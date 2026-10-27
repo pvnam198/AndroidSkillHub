@@ -1,12 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="20dp">
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/settings" android:textAppearance="?attr/textAppearanceHeadline5" />
-    <Button android:id="@+id/english_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="English" />
-    <Button android:id="@+id/vietnamese_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tiếng Việt" />
-    <Button android:id="@+id/privacy_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/privacy_options" />
-    <Button android:id="@+id/reset_onboarding_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/reset_onboarding" />
-    <Button android:id="@+id/premium_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/go_premium" />
-    <Button android:id="@+id/debug_config_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/debug_config" android:visibility="gone" />
-    <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1" />
-    <FrameLayout android:id="@+id/banner_container" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="50dp" />
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_header"
+        android:paddingStart="20dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="22dp"
+        android:text="@string/settings"
+        android:textAppearance="@style/TextAppearance.App.ScreenTitle" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="4dp"
+                android:paddingBottom="8dp"
+                android:text="@string/settings_language"
+                android:textAppearance="?attr/textAppearanceOverline"
+                android:textColor="@color/app_text_secondary" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:orientation="horizontal"
+                android:padding="12dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/english_button"
+                    style="@style/Widget.App.Button.Outlined"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:text="English" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/vietnamese_button"
+                    style="@style/Widget.App.Button.Outlined"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:text="Tiếng Việt" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="4dp"
+                android:paddingTop="20dp"
+                android:paddingBottom="8dp"
+                android:text="@string/settings_general"
+                android:textAppearance="?attr/textAppearanceOverline"
+                android:textColor="@color/app_text_secondary" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/privacy_button"
+                    style="@style/Widget.App.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/privacy_options" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/reset_onboarding_button"
+                    style="@style/Widget.App.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/reset_onboarding" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/debug_config_button"
+                    style="@style/Widget.App.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/debug_config"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/premium_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/go_premium" />
+        </LinearLayout>
+    </ScrollView>
+
+    <FrameLayout
+        android:id="@+id/banner_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="50dp" />
 </LinearLayout>

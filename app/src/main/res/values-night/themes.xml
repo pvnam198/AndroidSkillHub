@@ -1,16 +1,18 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Night uses the same theme; colours come from values-night/colors.xml. -->
     <style name="Theme.AndroidSkillHub" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_200</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/black</item>
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_200</item>
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorPrimaryVariant">@color/brand_primary_dark</item>
+        <item name="colorOnPrimary">@color/brand_on_primary</item>
+        <item name="colorSecondary">@color/brand_secondary</item>
+        <item name="colorSecondaryVariant">@color/brand_secondary</item>
         <item name="colorOnSecondary">@color/black</item>
-        <!-- Status bar color. -->
+        <item name="colorSurface">@color/app_surface</item>
+        <item name="colorOnSurface">@color/app_text_primary</item>
+        <item name="android:colorBackground">@color/app_background</item>
+        <item name="colorOnBackground">@color/app_text_primary</item>
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+        <item name="android:textColorSecondary">@color/app_text_secondary</item>
+        <item name="materialButtonStyle">@style/Widget.App.Button</item>
     </style>
 </resources>

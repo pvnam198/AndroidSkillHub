@@ -33,6 +33,7 @@ class LanguageAdapter(
     class TextHolder(private val text: TextView) : RecyclerView.ViewHolder(text) {
         fun bind(label: String, isSelected: Boolean, onClick: () -> Unit) {
             text.text = label
+            text.isSelected = isSelected
             text.setTypeface(null, if (isSelected) Typeface.BOLD else Typeface.NORMAL)
             text.setOnClickListener { onClick() }
         }

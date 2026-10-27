@@ -2,18 +2,14 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_selected="true">
         <shape android:shape="oval">
-            <size
-                android:width="10dp"
-                android:height="10dp" />
-            <solid android:color="#1976D2" />
+            <size android:width="10dp" android:height="10dp" />
+            <solid android:color="@color/brand_primary" />
         </shape>
     </item>
     <item>
         <shape android:shape="oval">
-            <size
-                android:width="10dp"
-                android:height="10dp" />
-            <solid android:color="#BDBDBD" />
+            <size android:width="10dp" android:height="10dp" />
+            <solid android:color="@color/app_outline" />
         </shape>
     </item>
 </selector>

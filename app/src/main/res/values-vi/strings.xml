@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">AndroidSkillHub</string>
+    <string name="settings_language">Ngôn ngữ</string>
+    <string name="settings_general">Chung</string>
     <string name="choose_language">Chọn ngôn ngữ</string>
     <string name="apply_label">Áp dụng</string>
     <string name="next">Tiếp</string>
