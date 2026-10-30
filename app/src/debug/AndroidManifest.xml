@@ -5,5 +5,11 @@
             android:name=".core.ui.base.BaseUiLifecycleTestActivity"
             android:exported="false"
             android:theme="@style/Theme.AndroidSkillHub" />
+
+        <!-- [DEBUG] adb-driven taps for devices that block `adb shell input`. See AdbDriver.kt. -->
+        <provider
+            android:name=".debug.AdbDriverInitProvider"
+            android:authorities="${applicationId}.adbdriver"
+            android:exported="false" />
     </application>
 </manifest>

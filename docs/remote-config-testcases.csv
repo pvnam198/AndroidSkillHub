@@ -6,59 +6,59 @@
 "5) Mỗi case: đặt giá trị ở cột D, làm theo cột E, so với cột F, ghi Pass/Fail ở cột G.",,,,,,,
 ,,,,,,,
 STT,Nhóm,Key,Giá trị đặt (Debug Config),Các bước,Kỳ vọng,Kết quả (Pass/Fail),Ghi chú
-1,Debug Config,(màn debug),(mặc định),Bản debug: mở Settings,Thấy nút 'Debug config',,Release build không có nút này
-2,Debug Config,(màn debug),-,Mở Debug config,Thấy danh sách tất cả key + giá trị hiện tại + gợi ý format,, 
-3,Debug Config,(màn debug),-,"Sửa 1 key, Lưu, mở lại Debug config",Giá trị override được giữ nguyên,, 
-4,Debug Config,(màn debug),-,Bấm 'Xoá hết override',Mọi key về giá trị Firebase/default,, 
-5,intro_swipe,intro_swipe,(mặc định) / true,Reset onboarding → tới Onboarding → vuốt ngang,Vuốt chuyển trang được,, 
-6,intro_swipe,intro_swipe,false,Reset onboarding → mở lại → vuốt,KHÔNG vuốt được; chỉ nút Next chuyển trang,, 
-7,language_delay_millis,language_delay_millis,800 (default),Reset onboarding → màn Language,Nút xác nhận hiện sau ~0.8s,, 
-8,language_delay_millis,language_delay_millis,3000,màn Language,Nút hiện sau ~3s,, 
-9,language_delay_millis,language_delay_millis,0,màn Language,Nút hiện gần như ngay,, 
-10,language_setup,language_setup,"next=1,loading=false (default)",màn Language,"Nút chữ 'Apply', KHÔNG vòng loading",, 
-11,language_setup,language_setup,"next=2,loading=true",màn Language,"Có vòng loading trước, rồi hiện ICON mũi tên Next; bấm đi tiếp được",, 
-12,intro1_setup,intro1_setup,"next=1,ds=1,delay=0,dot=0 (default)",Onboarding,Nút chữ Next; indicator dạng text 'x/4' phía TRÊN nút; hiện ngay,, 
-13,intro1_setup,intro1_setup,"next=1,ds=1,delay=0,dot=1",Onboarding,Hiện CHẤM TRÒN thay cho text 'x/4',, 
-14,intro1_setup,intro1_setup,"next=2,ds=1,delay=0,dot=0",Onboarding,Nút Next là ICON mũi tên,, 
-15,intro1_setup,intro1_setup,"next=1,ds=1,delay=1500,dot=0",Onboarding,Mỗi trang chờ ~1.5s mới hiện nút Next,, 
-16,intro1_setup,intro1_setup,"next=1,ds=0,delay=0,dot=0",Onboarding,Cụm indicator nằm DƯỚI nút Next,, 
-17,native_intro_use_icon_next,native_intro_use_icon_next,"next=1,loading=false (default)",Onboarding tới trang quảng cáo (trang ad),Góc trên-phải có MŨI TÊN Next; nút đáy ẩn ở trang này; bấm sang trang kế,, 
-18,native_intro_use_icon_next,native_intro_use_icon_next,"next=2,loading=true  (+ wait_time=3)",Trang quảng cáo onboarding,Hiện spinner ~3s rồi hiện ICON X; bấm X sang trang kế,, 
-19,enable: ads_splash,enable,"ads_splash=2,inter=1,banner=2,onresume=1 (default)",MỞ LẠI app,Splash hiện INTERSTITIAL,,Chốt ở Splash → phải mở lại app
-20,enable: ads_splash,enable,"ads_splash=3,...",MỞ LẠI app,Splash: inter + sau đó break NATIVE fullscreen,,mở lại app
-21,enable: ads_splash,enable,"ads_splash=1,...",MỞ LẠI app,Splash hiện APP OPEN (AOA),,mở lại app
-22,enable: ads_splash,enable,"ads_splash=0,...",MỞ LẠI app,"Splash KHÔNG hiện QC full-screen, vào thẳng",,mở lại app
-23,enable: inter,enable,"inter=1,... (default)",Bấm Apply (Language) hoặc finish Onboarding,Hiện INTERSTITIAL thường,, 
-24,enable: inter,enable,"inter=2,...",Apply / finish Onboarding,Hiện NATIVE fullscreen THAY cho inter,, 
-25,enable: inter,enable,"inter=3,...",Apply / finish Onboarding,Inter + break native,, 
-26,enable: inter,enable,"inter=0,...",Apply / finish Onboarding,"KHÔNG inter, đi tiếp luôn",, 
-27,enable: banner,enable,"banner=1,...",Vào Home/Settings,Banner THƯỜNG,, 
-28,enable: banner,enable,"banner=2,... (default)",Home/Settings,Banner COLLAPSIBLE (AdMob),, 
-29,enable: banner,enable,"banner=3,...",Home/Settings,NATIVE card trong ô banner,, 
-30,enable: banner,enable,"banner=4,...",Home/Settings,NATIVE COLLAPSIBLE (mở lớn rồi thu nhỏ thành dải),, 
-31,enable: banner,enable,"banner=0,...",Home/Settings,Ô banner ẨN,, 
-32,enable: onresume,enable,"onresume=1,... (default)",Ở Home → nhấn Home của máy → mở lại app,Hiện APP OPEN,,cần đã hoàn tất onboarding (setupCompleted)
-33,enable: onresume,enable,"onresume=2,...",Về nền rồi quay lại app,Hiện màn WELCOME BACK (native + đếm ngược wait_time rồi cho đóng),, 
-34,enable: onresume,enable,"onresume=0,...",Về nền rồi quay lại app,KHÔNG hiện gì,, 
-35,native_template,native_template,native media (default),Xem native (Language/Onboarding/Welcome back/banner-native),Card CÓ ẢNH,, 
-36,native_template,native_template,native no media,native các màn trên,Card CHỈ CHỮ (không ảnh),, 
-37,native_template,native_template,native banner,native các màn trên,DẢI NHỎ (icon + tiêu đề + mô tả + CTA),, 
-38,native_template,native_template,native fullscreen,native các màn trên,Card LỚN (ảnh to),, 
-39,native_template,native_template,(bất kỳ),Kiểm feed / post-interstitial / native collapsible,KHÔNG đổi layout (giữ cố định),, 
-40,collap_config,collap_config,1 (default) + banner=4,Tap vào native collapsible,Mở trang quảng cáo NGAY,, 
-41,collap_config,collap_config,2 + banner=4,Tap lần 1,KHÔNG mở,, 
-42,collap_config,collap_config,2 + banner=4,Tap lần 2,MỞ trang quảng cáo,, 
-43,collap_config,collap_config,2 + banner=4,Bấm nút X (close) ở bản lớn,Vẫn thu nhỏ được (close hoạt động),, 
-44,wait_time,wait_time,5 (default) + inter=3,Kích break native sau inter,Icon X đếm ngược ~5s rồi hiện,, 
-45,wait_time,wait_time,3 + inter=3,Kích break native,Đếm ngược ~3s,, 
-46,wait_time,wait_time,0 + inter=3,Kích break native,X hiện ngay,, 
-47,step_count,step_count,1 (default),Mở lại app vài lần,Lần nào cũng có inter (nếu enable cho phép),,inter hiện ở Splash
-48,step_count,step_count,2,Mở app lần 1,Lần 1 KHÔNG inter,,bộ đếm lưu qua các lần mở
-49,step_count,step_count,2,Mở app lần 2,Lần 2 CÓ inter,,mở lại app
-50,inter_delay_time,inter_delay_time,"time=30,ignore=",Kích 2 inter cách nhau <30s,Inter thứ 2 bị CHẶN,, 
-51,inter_delay_time,inter_delay_time,"time=30,ignore=inter_language",Vừa có inter xong → vào Language bấm Apply,Inter ở Language VẪN hiện (được miễn gap),, 
-52,refresh_rate,refresh_rate / banner_slot_auto_reload,"banner_slot_auto_reload=true, refresh_rate=20","Ở màn có banner, chờ ~20s",Banner TỰ reload,, 
-53,refresh_rate,banner_slot_auto_reload,false,"Ở màn có banner, chờ",Banner KHÔNG tự reload,, 
-54,Tiering ID,"id_* (rỗng, default)",(rỗng),Mở app,Mọi QC hiện bằng TEST ID như cũ,,mở lại app
-55,Tiering ID,id_interstitial,"highfloor=ca-app-pub-9999/9999,medium=ca-app-pub-3940256099942544/1033173712",MỞ LẠI app → kích inter,Inter thử id highfloor (fail) rồi rơi xuống medium (test id) → VẪN hiện (waterfall đúng tầng),,mở lại app; xem log 'Banner/Interstitial: loading <id>'
-56,Regression,premium,-,Settings → Premium → Upgrade (sample) → quay lại app,TẮT toàn bộ quảng cáo (banner/native/inter/AOA/welcome back),, 
+1,Debug Config,(màn debug),(mặc định),Bản debug: mở Settings,Thấy nút 'Debug config',Pass,Release build không có nút này | Auto test: Bản debug: Settings có nút 'Debug config'
+2,Debug Config,(màn debug),-,Mở Debug config,Thấy danh sách tất cả key + giá trị hiện tại + gợi ý format,Pass,Auto test: Debug config liệt kê key + giá trị hiện tại + gợi ý format
+3,Debug Config,(màn debug),-,"Sửa 1 key, Lưu, mở lại Debug config",Giá trị override được giữ nguyên,Pass,Auto test: Sửa wait_time=3 → Lưu → mở lại Debug config vẫn là 3
+4,Debug Config,(màn debug),-,Bấm 'Xoá hết override',Mọi key về giá trị Firebase/default,Pass,"Auto test: Xoá hết override → các ô về default, file override rỗng. Lưu ý: trước khi sửa lỗi cache (xem case 51), các key số/boolean đã override vẫn bị 'dính' sau khi xoá; đã sửa và kiểm lại: override step_count=3/wait_time=9 không còn ghi vào cache (vẫn 1/5)"
+5,intro_swipe,intro_swipe,(mặc định) / true,Reset onboarding → tới Onboarding → vuốt ngang,Vuốt chuyển trang được,Pass,Auto test: Default intro_swipe=true: vuốt ngang chuyển từ trang 1/4 sang 2/4
+6,intro_swipe,intro_swipe,false,Reset onboarding → mở lại → vuốt,KHÔNG vuốt được; chỉ nút Next chuyển trang,Pass,Auto test: intro_swipe=false: vuốt ngang không đổi trang (vẫn 1/4); bấm Next sang 2/4
+7,language_delay_millis,language_delay_millis,800 (default),Reset onboarding → màn Language,Nút xác nhận hiện sau ~0.8s,Pass,"Auto test: delay 800: danh sách hiện ở ~5.2s, nút Apply hiện ở khoảng 5.9–6.7s (≈0.6–1.4s sau, sai số chụp ~0.6s)"
+8,language_delay_millis,language_delay_millis,3000,màn Language,Nút hiện sau ~3s,Pass,"Auto test: delay 3000: danh sách hiện ~5.5–6.0s, nút Apply hiện ~7.8–8.4s (≈2.4–2.9s sau, khớp ~3s trong sai số chụp)"
+9,language_delay_millis,language_delay_millis,0,màn Language,Nút hiện gần như ngay,Pass,Auto test: delay 0: nút Apply hiện cùng khung hình đầu tiên có màn Language
+10,language_setup,language_setup,"next=1,loading=false (default)",màn Language,"Nút chữ 'Apply', KHÔNG vòng loading",Pass,"Auto test: Default language_setup: nút chữ 'Apply' ở đáy, trước khi hiện chỉ là nền trống, không có vòng loading"
+11,language_setup,language_setup,"next=2,loading=true",màn Language,"Có vòng loading trước, rồi hiện ICON mũi tên Next; bấm đi tiếp được",Pass,"Auto test: next=2,loading=true (+delay 3000): vòng loading ở góc phải thanh tiêu đề rồi thành icon dấu check; nút Apply đáy ẩn; bấm check sang Onboarding"
+12,intro1_setup,intro1_setup,"next=1,ds=1,delay=0,dot=0 (default)",Onboarding,Nút chữ Next; indicator dạng text 'x/4' phía TRÊN nút; hiện ngay,Pass,"Auto test: Default intro1_setup: nút chữ Next, indicator text '1 / 4' nằm trên nút (y=1839 < 1988), hiện ngay"
+13,intro1_setup,intro1_setup,"next=1,ds=1,delay=0,dot=1",Onboarding,Hiện CHẤM TRÒN thay cho text 'x/4',Pass,"Auto test: dot=1: hiện TabLayout chấm tròn (page_dots) phía trên nút Next, không còn text 'x/4'"
+14,intro1_setup,intro1_setup,"next=2,ds=1,delay=0,dot=0",Onboarding,Nút Next là ICON mũi tên,Pass,"Auto test: next=2: nút Next là icon mũi tên (next_icon), không có nút chữ"
+15,intro1_setup,intro1_setup,"next=1,ds=1,delay=1500,dot=0",Onboarding,Mỗi trang chờ ~1.5s mới hiện nút Next,Pass,"Auto test: delay=1500: trang 1 lúc đầu nút ẩn; bấm Next sang 2/4 → nút ẩn ở 0.1–0.7s, hiện lại ở ~1.3s (cộng độ trễ lệnh ≈1.5s)"
+16,intro1_setup,intro1_setup,"next=1,ds=0,delay=0,dot=0",Onboarding,Cụm indicator nằm DƯỚI nút Next,Pass,Auto test: ds=0: text '1 / 4' nằm dưới nút Next
+17,native_intro_use_icon_next,native_intro_use_icon_next,"next=1,loading=false (default)",Onboarding tới trang quảng cáo (trang ad),Góc trên-phải có MŨI TÊN Next; nút đáy ẩn ở trang này; bấm sang trang kế,Pass,"Auto test: Default native_intro_use_icon_next: trang ad 3/4 có mũi tên Next góc trên-phải, nút Next đáy ẩn"
+18,native_intro_use_icon_next,native_intro_use_icon_next,"next=2,loading=true  (+ wait_time=3)",Trang quảng cáo onboarding,Hiện spinner ~3s rồi hiện ICON X; bấm X sang trang kế,Pass,"Auto test: SAU KHI SỬA. Lần đầu FAIL: spinner chỉ ~1.2s thay vì 3s vì ViewPager2 tạo trước trang ad khi đang ở trang 2 nên bộ đếm chạy sớm. Đã sửa OnboardingAdFragment chờ RESUMED mới đếm → spinner ~3s rồi hiện icon X, bấm X sang trang 4/4"
+19,enable: ads_splash,enable,"ads_splash=2,inter=1,banner=2,onresume=1 (default)",MỞ LẠI app,Splash hiện INTERSTITIAL,Pass,"Chốt ở Splash → phải mở lại app | Auto test: Lần mở đầu (default ads_splash=2): Splash hiện interstitial Test Ad, có nút Close"
+20,enable: ads_splash,enable,"ads_splash=3,...",MỞ LẠI app,Splash: inter + sau đó break NATIVE fullscreen,Pass,"mở lại app | Auto test: ads_splash=3: Splash hiện interstitial, đóng xong hiện break native fullscreen (Sponsored, thanh đếm ngược, nút Next)"
+21,enable: ads_splash,enable,"ads_splash=1,...",MỞ LẠI app,Splash hiện APP OPEN (AOA),Pass,"mở lại app | Auto test: ads_splash=1: mở lại app, Splash hiện App Open ('Continue to app')"
+22,enable: ads_splash,enable,"ads_splash=0,...",MỞ LẠI app,"Splash KHÔNG hiện QC full-screen, vào thẳng",Pass,"mở lại app | Auto test: ads_splash=0: mở lại app vào thẳng Home, không có QC full-screen"
+23,enable: inter,enable,"inter=1,... (default)",Bấm Apply (Language) hoặc finish Onboarding,Hiện INTERSTITIAL thường,Pass,Auto test: Default inter=1: bấm Apply ở Language hiện interstitial thường
+24,enable: inter,enable,"inter=2,...",Apply / finish Onboarding,Hiện NATIVE fullscreen THAY cho inter,Pass,"Auto test: SAU KHI SỬA. Lần đầu FAIL: inter=2 bấm Apply vào thẳng Onboarding, không hiện gì (break native poll slot rỗng vì vừa mới preload). Đã sửa: chờ native tải xong (tối đa 5s) rồi mở break → hiện native fullscreen thay inter (không có AdActivity), Next → Close → sang Onboarding"
+25,enable: inter,enable,"inter=3,...",Apply / finish Onboarding,Inter + break native,Pass,"Auto test: SAU KHI SỬA. Lần đầu FAIL (khi ads_splash=0): bấm Apply không có QC vì interstitial chỉ được tải sẵn ở Splash khi Splash cũng hiện inter. Đã sửa Splash tải sẵn inter khi enable.inter=1/3 → inter hiện, đóng xong có break native, rồi sang Onboarding"
+26,enable: inter,enable,"inter=0,...",Apply / finish Onboarding,"KHÔNG inter, đi tiếp luôn",Pass,"Auto test: inter=0: bấm Apply sang thẳng Onboarding, không có QC"
+27,enable: banner,enable,"banner=1,...",Vào Home/Settings,Banner THƯỜNG,Pass,"Auto test: banner=1: Home có banner thường nhỏ 'Test Ad' ở đáy, không bản mở rộng"
+28,enable: banner,enable,"banner=2,... (default)",Home/Settings,Banner COLLAPSIBLE (AdMob),Pass,Auto test: Default banner=2: Home hiện banner collapsible (bản lớn có nút thu gọn ⌄); Onboarding cũng collapsible
+29,enable: banner,enable,"banner=3,...",Home/Settings,NATIVE card trong ô banner,Pass,"Auto test: banner=3: ô banner hiện native card (icon, tiêu đề, ảnh, nút INSTALL)"
+30,enable: banner,enable,"banner=4,...",Home/Settings,NATIVE COLLAPSIBLE (mở lớn rồi thu nhỏ thành dải),Pass,"Auto test: banner=4: native collapsible mở lớn (có nút X), bấm X thu nhỏ thành dải (icon + tiêu đề + INSTALL) ở đáy"
+31,enable: banner,enable,"banner=0,...",Home/Settings,Ô banner ẨN,Pass,"Auto test: banner=0: không có banner_container (ô banner ẩn), chỉ còn native trong feed"
+32,enable: onresume,enable,"onresume=1,... (default)",Ở Home → nhấn Home của máy → mở lại app,Hiện APP OPEN,Pass,cần đã hoàn tất onboarding (setupCompleted) | Auto test: Default onresume=1: Home → nền → quay lại hiện App Open ('Continue to app')
+33,enable: onresume,enable,"onresume=2,...",Về nền rồi quay lại app,Hiện màn WELCOME BACK (native + đếm ngược wait_time rồi cho đóng),Pass,"Auto test: onresume=2 (wait_time=5): về nền rồi quay lại hiện màn Welcome back có native; góc phải đếm ngược 4→3→2→1 rồi hiện X, bấm X về Home. (Đã sửa thêm: X trước đây màu trắng trên nền sáng gần như không thấy → đổi sang màu chữ tối)"
+34,enable: onresume,enable,"onresume=0,...",Về nền rồi quay lại app,KHÔNG hiện gì,Pass,"Auto test: onresume=0: về nền rồi quay lại vẫn ở Home, không hiện gì"
+35,native_template,native_template,native media (default),Xem native (Language/Onboarding/Welcome back/banner-native),Card CÓ ẢNH,Pass,"Auto test: native media (Language): card có ad_media, khung native cao ~920px"
+36,native_template,native_template,native no media,native các màn trên,Card CHỈ CHỮ (không ảnh),Pass,"Auto test: native no media: card không có ad_media, chỉ icon/tiêu đề/mô tả/CTA (khung ~457px)"
+37,native_template,native_template,native banner,native các màn trên,DẢI NHỎ (icon + tiêu đề + mô tả + CTA),Pass,Auto test: native banner: dải nhỏ 1 hàng icon + tiêu đề + mô tả + CTA bên phải (khung ~228px)
+38,native_template,native_template,native fullscreen,native các màn trên,Card LỚN (ảnh to),Pass,"Auto test: native fullscreen: card lớn có ảnh to (khung ~1390px, gần hết màn)"
+39,native_template,native_template,(bất kỳ),Kiểm feed / post-interstitial / native collapsible,KHÔNG đổi layout (giữ cố định),Pass,Auto test: native_template='native banner' nhưng native trong feed Home vẫn có ảnh (ad_media) và native collapsible vẫn bản lớn có ảnh + X → không bị đổi layout
+40,collap_config,collap_config,1 (default) + banner=4,Tap vào native collapsible,Mở trang quảng cáo NGAY,Pass,Auto test: collap_config=1 + banner=4: tap 1 lần vào native collapsible mở ngay Google Play (trang QC)
+41,collap_config,collap_config,2 + banner=4,Tap lần 1,KHÔNG mở,Pass,Auto test: collap_config=2 + banner=4: tap lần 1 vào card không mở trang QC (vẫn ở Home)
+42,collap_config,collap_config,2 + banner=4,Tap lần 2,MỞ trang quảng cáo,Bỏ qua,Auto test: Không xác nhận được với quảng cáo test: tap lần 2 app gọi recordCustomClickGesture() đúng lượt nhưng test ad không mở trang. Custom click gesture là tính năng Google chỉ bật cho publisher được duyệt (allowlist) → cần kiểm lại bằng ad unit thật
+43,collap_config,collap_config,2 + banner=4,Bấm nút X (close) ở bản lớn,Vẫn thu nhỏ được (close hoạt động),Pass,"Auto test: SAU KHI SỬA. Lần đầu FAIL: với collap_config>1 lớp bắt-tap che mất nút X (không thu nhỏ được) và kéo card lớn phủ kín màn hình. Đã sửa NativeCollapseAd: lớp bắt-tap nằm cùng cha với nút X, không làm giãn card → card lớn đúng kích thước, bấm X thu nhỏ thành dải"
+44,wait_time,wait_time,5 (default) + inter=3,Kích break native sau inter,Icon X đếm ngược ~5s rồi hiện,Pass,Auto test: wait_time=5 + inter=3: đóng inter → break native; stage 1 nút Next hiện sau ~5s; stage 2 đếm ngược 5→4→3→2→1 rồi hiện X (~5.4s)
+45,wait_time,wait_time,3 + inter=3,Kích break native,Đếm ngược ~3s,Pass,"Auto test: wait_time=3 + inter=3: stage 1 nút Next hiện sau ~3s (khung 2.7s chưa có, 3.3s đã có)"
+46,wait_time,wait_time,0 + inter=3,Kích break native,X hiện ngay,Pass,"Auto test: wait_time=0 + inter=3: nút Next của stage 1 có ngay khi break hiện, stage 2 hiện X ngay (không đếm ngược)"
+47,step_count,step_count,1 (default),Mở lại app vài lần,Lần nào cũng có inter (nếu enable cho phép),Pass,"inter hiện ở Splash | Auto test: step_count=1: 4 lần mở app liên tiếp, lần nào Splash cũng hiện inter (bộ đếm 16→19)"
+48,step_count,step_count,2,Mở app lần 1,Lần 1 KHÔNG inter,Pass,"bộ đếm lưu qua các lần mở | Auto test: step_count=2: lần bộ đếm lẻ (21, 23) KHÔNG có inter ở Splash, vào thẳng Home. Lưu ý: bộ đếm dùng chung và lưu qua các lần mở, nên 'lần 1' có inter hay không tùy giá trị bộ đếm đang có"
+49,step_count,step_count,2,Mở app lần 2,Lần 2 CÓ inter,Pass,"mở lại app | Auto test: step_count=2: lần bộ đếm chẵn (20, 22) CÓ inter → xen kẽ 1 có / 1 không qua các lần mở app"
+50,inter_delay_time,inter_delay_time,"time=30,ignore=",Kích 2 inter cách nhau <30s,Inter thứ 2 bị CHẶN,Pass,"Auto test: time=30, ignore rỗng: vừa có inter ở Splash, ~10s sau bấm Apply ở Language KHÔNG hiện inter (bị chặn bởi gap; cùng thời điểm đó case 51 có inter nên không phải do chưa tải xong)"
+51,inter_delay_time,inter_delay_time,"time=30,ignore=inter_language",Vừa có inter xong → vào Language bấm Apply,Inter ở Language VẪN hiện (được miễn gap),Pass,"Auto test: SAU KHI SỬA. Lần đầu FAIL: inter ở Language không hiện dù ignore=inter_language, do lỗi override Debug Config bị ghi vào cache Remote Config (step_count=2 từ case trước vẫn còn sau khi bỏ override). Đã sửa RemoteConfig.persistToCache chỉ lưu giá trị gốc → time=30, ignore=inter_language: vừa có inter ở Splash, ~10s sau bấm Apply vẫn hiện inter"
+52,refresh_rate,refresh_rate / banner_slot_auto_reload,"banner_slot_auto_reload=true, refresh_rate=20","Ở màn có banner, chờ ~20s",Banner TỰ reload,Pass,"Auto test: banner_slot_auto_reload=true, refresh_rate=20 ở Settings: vùng banner đổi (shimmer → banner mới) ở ~18s và ~40s → tự reload ~20s/lần. Lưu ý: Home cố ý không dùng timer (reload khi đổi tab/quay lại app), đúng như tài liệu"
+53,refresh_rate,banner_slot_auto_reload,false,"Ở màn có banner, chờ",Banner KHÔNG tự reload,Pass,Auto test: banner_slot_auto_reload=false ở Settings: vùng banner không đổi trong ~47s → không tự reload
+54,Tiering ID,"id_* (rỗng, default)",(rỗng),Mở app,Mọi QC hiện bằng TEST ID như cũ,Pass,"mở lại app | Auto test: id_* rỗng (mặc định): toàn bộ QC trong lượt test (inter, AOA, banner, native, collapsible) đều hiện 'Test Ad' → dùng test ID"
+55,Tiering ID,id_interstitial,"highfloor=ca-app-pub-9999/9999,medium=ca-app-pub-3940256099942544/1033173712",MỞ LẠI app → kích inter,Inter thử id highfloor (fail) rồi rơi xuống medium (test id) → VẪN hiện (waterfall đúng tầng),Pass,"mở lại app; xem log 'Banner/Interstitial: loading <id>' | Auto test: id_interstitial=highfloor=<id sai>,medium=<test id>: mở lại app, Splash vẫn hiện interstitial Test Ad → waterfall rơi xuống tầng medium. (Không xem được log từng id vì app không ghi log này; thứ tự tầng có unit test WaterfallLoaderTest)"
+56,Regression,premium,-,Settings → Premium → Upgrade (sample) → quay lại app,TẮT toàn bộ quảng cáo (banner/native/inter/AOA/welcome back),Pass,Auto test: Settings → Premium → Upgrade (sample): trạng thái 'Premium is active'; quay về Home không còn banner/native; mở lại app không có QC ở Splash; về nền rồi quay lại không có AOA/Welcome back; Settings không có banner
