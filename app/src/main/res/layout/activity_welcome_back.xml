@@ -34,7 +34,9 @@
             android:layout_height="40dp"
             android:layout_gravity="end|center_vertical"
             android:contentDescription="@string/ad_close"
+            android:padding="8dp"
             android:src="@drawable/ic_close_2"
+            android:tint="?attr/colorOnBackground"
             android:visibility="gone" />
     </FrameLayout>
 

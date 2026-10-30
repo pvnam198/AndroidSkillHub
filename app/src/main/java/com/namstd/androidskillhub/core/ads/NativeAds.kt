@@ -1,6 +1,8 @@
 package com.namstd.androidskillhub.core.ads
 
 import android.app.Activity
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
@@ -172,6 +174,21 @@ object NativeAds {
         val ad = slotFor(placement).take(TTL_MS)
         preload(placement)
         return ad
+    }
+
+    /**
+     * Calls [onDone] once [placement] has a fresh ad sitting ready for [poll] - right away if one is
+     * already cached, otherwise after loading one - or after [timeoutMs] / a failed load, whichever
+     * comes first. For one-shot full-screen placements with nothing in front of them to hide the
+     * load (e.g. a native-only break), so [poll] doesn't come up empty. Always calls [onDone] exactly once.
+     */
+    fun awaitReady(activity: Activity, placement: NativePlacement, timeoutMs: Long, onDone: () -> Unit) {
+        val slot = slotFor(placement)
+        if (!Ads.adsEnabled || !Ads.isReady || slot.hasFresh(TTL_MS)) { onDone(); return }
+        var finished = false
+        val finish = { if (!finished) { finished = true; onDone() } }
+        val handle = request(activity, placement, onFailed = { finish() }) { ad -> slot.cache(ad); finish() }
+        Handler(Looper.getMainLooper()).postDelayed({ handle.destroy(); finish() }, timeoutMs)
     }
 
     /**

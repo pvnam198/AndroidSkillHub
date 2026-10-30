@@ -106,23 +106,27 @@ object RemoteConfig {
         }
     }
 
+    /**
+     * Caches the raw Firebase/default values - never the getters, which include [DebugOverrides]:
+     * an override cached here would become the seeded default and outlive "Xoá hết override".
+     */
     private fun persistToCache() {
         prefs.putCachedString(KEY_ENABLE, remoteConfig.getString(KEY_ENABLE))
-        prefs.putCachedBoolean(KEY_BANNER_SLOT_AUTO_RELOAD, bannerSlotAutoReload)
-        prefs.putCachedLong(KEY_REFRESH_RATE, refreshRateMs / 1000)
+        prefs.putCachedBoolean(KEY_BANNER_SLOT_AUTO_RELOAD, remoteConfig.getBoolean(KEY_BANNER_SLOT_AUTO_RELOAD))
+        prefs.putCachedLong(KEY_REFRESH_RATE, remoteConfig.getLong(KEY_REFRESH_RATE))
         prefs.putCachedString(KEY_INTER_DELAY_TIME, remoteConfig.getString(KEY_INTER_DELAY_TIME))
-        prefs.putCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, openOpenGapMs / 1000)
-        prefs.putCachedLong(KEY_INTER_OPEN_GAP_SECONDS, interOpenGapMs / 1000)
-        prefs.putCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT, postInterstitialNativeAdCount.toLong())
-        prefs.putCachedLong(KEY_WAIT_TIME, waitTimeMs / 1000)
-        prefs.putCachedBoolean(KEY_INTRO_SWIPE, introSwipe)
-        prefs.putCachedLong(KEY_LANGUAGE_DELAY_MILLIS, languageDelayMillis)
-        prefs.putCachedLong(KEY_STEP_COUNT, stepCount.toLong())
+        prefs.putCachedLong(KEY_OPEN_OPEN_GAP_SECONDS, remoteConfig.getLong(KEY_OPEN_OPEN_GAP_SECONDS))
+        prefs.putCachedLong(KEY_INTER_OPEN_GAP_SECONDS, remoteConfig.getLong(KEY_INTER_OPEN_GAP_SECONDS))
+        prefs.putCachedLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT, remoteConfig.getLong(KEY_POST_INTERSTITIAL_NATIVE_AD_COUNT))
+        prefs.putCachedLong(KEY_WAIT_TIME, remoteConfig.getLong(KEY_WAIT_TIME))
+        prefs.putCachedBoolean(KEY_INTRO_SWIPE, remoteConfig.getBoolean(KEY_INTRO_SWIPE))
+        prefs.putCachedLong(KEY_LANGUAGE_DELAY_MILLIS, remoteConfig.getLong(KEY_LANGUAGE_DELAY_MILLIS))
+        prefs.putCachedLong(KEY_STEP_COUNT, remoteConfig.getLong(KEY_STEP_COUNT))
         prefs.putCachedString(KEY_LANGUAGE_SETUP, remoteConfig.getString(KEY_LANGUAGE_SETUP))
         prefs.putCachedString(KEY_INTRO1_SETUP, remoteConfig.getString(KEY_INTRO1_SETUP))
         prefs.putCachedString(KEY_NATIVE_INTRO_USE_ICON_NEXT, remoteConfig.getString(KEY_NATIVE_INTRO_USE_ICON_NEXT))
         prefs.putCachedString(KEY_NATIVE_TEMPLATE, remoteConfig.getString(KEY_NATIVE_TEMPLATE))
-        prefs.putCachedLong(KEY_COLLAP_CONFIG, collapConfig.toLong())
+        prefs.putCachedLong(KEY_COLLAP_CONFIG, remoteConfig.getLong(KEY_COLLAP_CONFIG))
         prefs.putCachedString(KEY_ID_BANNER, remoteConfig.getString(KEY_ID_BANNER))
         prefs.putCachedString(KEY_ID_BANNER_COLLAPSIBLE, remoteConfig.getString(KEY_ID_BANNER_COLLAPSIBLE))
         prefs.putCachedString(KEY_ID_INTERSTITIAL, remoteConfig.getString(KEY_ID_INTERSTITIAL))

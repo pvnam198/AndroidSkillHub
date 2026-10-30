@@ -325,8 +325,13 @@ internal class NativeCollapseAd(
      * để bắn click thật, rồi reset. Các tap trước bị nuốt. [keepOnTop] (nút close) được đưa lên trên để vẫn bấm được.
      */
     private fun addClickBaitOverlay(view: NativeAdView, ad: NativeAd, gate: Int, keepOnTop: View?) {
-        val catcher = View(activity).apply {
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        val catcher = object : View(activity) {
+            // Fills the card without stretching it: a plain MATCH_PARENT view inside a WRAP_CONTENT card
+            // would claim the whole screen height. Takes a size only once the parent fixes one exactly.
+            override fun onMeasure(widthSpec: Int, heightSpec: Int) =
+                setMeasuredDimension(exactOrZero(widthSpec), exactOrZero(heightSpec))
+        }.apply {
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             isClickable = true
             setOnClickListener {
                 if (++clickCount >= gate) {
@@ -335,9 +340,14 @@ internal class NativeCollapseAd(
                 }
             }
         }
-        view.addView(catcher)
+        // Sit in the same parent as [keepOnTop] so bringToFront() really lifts it above the catcher -
+        // bringToFront() only reorders siblings, so the close button stays tappable.
+        (keepOnTop?.parent as? ViewGroup ?: view).addView(catcher)
         keepOnTop?.bringToFront()
     }
+
+    private fun exactOrZero(spec: Int) =
+        if (View.MeasureSpec.getMode(spec) == View.MeasureSpec.EXACTLY) View.MeasureSpec.getSize(spec) else 0
 
     private fun visibility(value: Any?) = if (value == null) View.GONE else View.VISIBLE
 }

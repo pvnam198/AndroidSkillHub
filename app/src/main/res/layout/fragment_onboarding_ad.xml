@@ -17,6 +17,8 @@
         android:layout_gravity="top|end"
         android:layout_margin="12dp"
         android:contentDescription="@string/next"
+        android:background="@drawable/bg_ad_control"
+        android:padding="8dp"
         android:src="@drawable/icon_next_2"
         android:visibility="gone" />
 
@@ -27,6 +29,8 @@
         android:layout_gravity="top|end"
         android:layout_margin="12dp"
         android:contentDescription="@string/next"
+        android:background="@drawable/bg_ad_control"
+        android:padding="10dp"
         android:src="@drawable/ic_close_2"
         android:visibility="gone" />
 

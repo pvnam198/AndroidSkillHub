@@ -119,8 +119,11 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
                 if (!InterstitialAds.show(this, placement, onComplete = onComplete)) onComplete()
             FullScreenAdPlan.NATIVE_ONLY -> {
                 if (!Ads.adsEnabled || FullScreenGate.isBusy()) { onComplete(); return }
-                NativeAds.preload(NativePlacement.POST_INTERSTITIAL)
-                runNativeAdBreak(onComplete)
+                // No interstitial in front to cover the load, so wait (bounded) for ad #1 first -
+                // otherwise the break polls an empty slot and closes before anything is shown.
+                NativeAds.awaitReady(this, NativePlacement.POST_INTERSTITIAL, NATIVE_ONLY_WAIT_MS) {
+                    runNativeAdBreak(onComplete)
+                }
             }
             FullScreenAdPlan.INTER_PLUS_NATIVE -> {
                 if (!Ads.adsEnabled || FullScreenGate.isBusy()) { onComplete(); return }
@@ -207,3 +210,6 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
         }
     }
 }
+
+/** How long a native-only break (enable.inter=2) waits for its first ad before giving up and moving on. */
+private const val NATIVE_ONLY_WAIT_MS = 5_000L

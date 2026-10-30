@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withResumed
 import com.namstd.androidskillhub.core.ads.NativePlacement
 import com.namstd.androidskillhub.core.config.RemoteConfig
 import com.namstd.androidskillhub.core.ui.base.BaseFragment
@@ -25,6 +26,9 @@ class OnboardingAdFragment : BaseFragment<FragmentOnboardingAdBinding>() {
         if (setup.loading) {
             binding.adLoading.isVisible = true
             viewLifecycleOwner.lifecycleScope.launch {
+                // ViewPager2 pre-creates this page while the previous one is on screen (it stays
+                // STARTED until selected), so only start the countdown once the page is RESUMED.
+                viewLifecycleOwner.lifecycle.withResumed {}
                 delay(RemoteConfig.waitTimeMs)
                 binding.adLoading.isVisible = false
                 control.isVisible = true

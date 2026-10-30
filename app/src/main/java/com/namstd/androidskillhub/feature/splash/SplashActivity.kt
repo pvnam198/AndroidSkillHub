@@ -53,6 +53,12 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
                 if (consentGranted) {
                     loadBanner(binding.bannerContainer)
                     NativeAds.preload(NativePlacement.LANGUAGE)
+                    // The Language/Onboarding interstitial needs an ad loaded up front too, even when
+                    // the splash itself shows none (ads_splash=0/1) - else the first one is skipped.
+                    val inAppPlan = resolveFullScreenPlan(InterstitialPlacement.LANGUAGE, RemoteConfig.enable)
+                    if (inAppPlan == FullScreenAdPlan.INTERSTITIAL || inAppPlan == FullScreenAdPlan.INTER_PLUS_NATIVE) {
+                        InterstitialAds.load()
+                    }
                     when (resolveFullScreenPlan(InterstitialPlacement.SPLASH, RemoteConfig.enable)) {
                         FullScreenAdPlan.APP_OPEN -> {
                             AppOpenAds.load()
